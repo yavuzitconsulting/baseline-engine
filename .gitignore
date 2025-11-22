@@ -10,3 +10,4 @@ package-lock.json
 session.json
 /protocol_01.txt
 /.vscode/launch.json
+/*.Identifier

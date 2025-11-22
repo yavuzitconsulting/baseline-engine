@@ -7,7 +7,7 @@ modern, AI-powered freedom: players can type naturally, and the engine
 tries to understand what they meant using intent recognition powered by
 LLMs.
 
-This project is built and maintained by **me alone -- Ramazan (RaY)**.
+This project is built and maintained by **me Ramazan (RaY) in hopes other people join in!**.
 
 ------------------------------------------------------------------------
 
@@ -163,15 +163,18 @@ Set via `.env` or environment variables.
 
 # License
 
-MIT
+Creative Commons Attribution NonCommercial 4.0 (CC BY-NC 4.0)
+
 
 ------------------------------------------------------------------------
 
 # Creator
 
-**Tangelo / Ramazan Yavuz (RaY)**\
-- Website: https://tangelo.com.tr\
-- Live Demo: https://tangelo.com.tr/baseline
+**Ramazan Yavuz (RaY)**\
+I'm a FullStack Software Engineer, i love my job (my open source contributions and personal projects), but my customers take priority!
+
+- Website: https://ramazan-yavuz.tr\
+- Live Demo: https://baseline-engine.com
 
 ------------------------------------------------------------------------
 
