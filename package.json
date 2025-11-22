@@ -1,0 +1,30 @@
+{
+  "name": "echo-protocol-engine",
+  "version": "0.1.0",
+  "description": "Text-based interactive fiction engine powered by local AI",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node scripts/verify_stories.js && concurrently \"cross-env NODE_ENV=development nodemon src/server.js\" \"nodemon src/editor_server.js\"",
+    "test": "jest"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "bcrypt": "^6.0.0",
+    "body-parser": "^1.20.0",
+    "express": "^4.18.0",
+    "natural": "^8.1.0",
+    "node-fetch": "^3.3.2",
+    "playwright": "^1.56.1",
+    "redis": "^5.10.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "jest": "^29.7.0",
+    "nock": "^13.5.6",
+    "nodemon": "^3.0.0",
+    "supertest": "^6.3.4",
+    "uuid": "^9.0.0"
+  }
+}

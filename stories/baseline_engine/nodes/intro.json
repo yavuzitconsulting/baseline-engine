@@ -1,0 +1,23 @@
+{
+  "id": "intro",
+  "text": "Greetings. I am Ramazan, your developer guide. \n\nYou have initialized the \"Baseline Engine Tour\". Note: This is not a game in the traditional sense. It is a technical demonstration of the `baseline_engine` capabilities. \n\nRight now, you are reading text defined in the `intro.json` file. The engine looks for this specific file to begin any story. \n\nEvery node in this tour includes a `help` command. Try it if you get stuck, or just to see how we handle global assistance.",
+  "text_revisit": "You have returned to the `intro` node. The engine uses the `text_revisit` property to display this shorter message instead of the full introduction.",
+  "text_conditionals": [],
+  "intents": [
+    {
+      "id": "help",
+      "description": "The user wants help or explanation.",
+      "action": "text",
+      "response": "DEBUG ASSISTANCE:\n- `look around`: Inspect the current node.\n- `begin`: Move to the next demonstration.\n- `help`: Display this message.",
+      "intent_description": "Wants help or explanation"
+    },
+    {
+      "id": "begin_tour",
+      "description": "The user wants to start the tour or go to the next room.",
+      "text_description": "A glowing [START] button pulses on the console.",
+      "action": "transition",
+      "target": "basics",
+      "intent_description": "Start the tour or go to the next room"
+    }
+  ]
+}

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASELINE ENGINE [WELCOME]</title>
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: #000;
+            color: #0f0;
+            overflow: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0) 50%, rgba(0,0,0,0.25) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9999;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        .crt-flicker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,255,0,0.02);
+            pointer-events: none;
+            z-index: 9998;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0%,100% { opacity: 1; }
+            50% { opacity: 0.95; }
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at center, rgba(0,40,0,0.3) 0%, rgba(0,0,0,0.8) 100%), #000;
+            box-shadow: inset 0 0 200px rgba(0,255,0,0.1);
+        }
+
+        .output-area {
+            overflow-y: auto;
+            height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .output-area::-webkit-scrollbar { width: 10px; }
+        .output-area::-webkit-scrollbar-track { background: #000; border: 1px solid #0f0; }
+        .output-area::-webkit-scrollbar-thumb {
+            background: #0f0;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+        }
+
+        .welcome-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glow {
+            text-shadow: 0 0 5px #0f0, 0 0 10px #0f0, 0 0 20px #0f0;
+        }
+
+        .glow-yellow {
+            text-shadow: 0 0 5px #ffcc00, 0 0 10px #ffcc00;
+        }
+
+        .log-entry.system {
+            padding: 20px;
+            border: 1px solid #0f0;
+            background: rgba(0,255,0,0.05);
+            box-shadow: 0 0 20px rgba(0,255,0,0.2);
+            margin-bottom: 40px;
+        }
+
+        .engine-title {
+            font-size: 3rem;
+            margin: 0;
+            letter-spacing: 4px;
+            animation: glitchText 3s infinite;
+            display: inline-block;
+        }
+
+        @keyframes glitchText {
+            0%,90%,100% { transform: translate(0); }
+            91% { transform: translate(-2px,2px); }
+            92% { transform: translate(2px,-2px); }
+            93% { transform: translate(-2px,2px); }
+            94% { transform: translate(2px,-2px); }
+        }
+
+        .section {
+            margin-bottom: 40px;
+            border-left: 3px solid #0f0;
+            padding-left: 20px;
+            background: rgba(0,255,0,0.02);
+            padding: 25px;
+            border-radius: 0 4px 4px 0;
+            box-shadow: -3px 0 0 #0f0, 0 0 30px rgba(0,255,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            background: rgba(0,255,0,0.05);
+            box-shadow: -3px 0 0 #0f0, 0 0 50px rgba(0,255,0,0.2);
+        }
+
+        .section::before {
+            content: '//';
+            position: absolute;
+            left: -35px;
+            top: 25px;
+            color: #0f0;
+            font-size: 1.2rem;
+        }
+
+        .section-title {
+            color: #ffcc00;
+            font-weight: bold;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: '_';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%,50% { opacity: 1; }
+            51%,100% { opacity: 0; }
+        }
+
+        .section p {
+            line-height: 1.6;
+            margin-bottom: 12px;
+            color: #0f0;
+            opacity: 0.9;
+        }
+
+        .highlight { color: #0f0; font-weight: bold; }
+
+        .link-btn {
+            display: inline-block;
+            border: 2px solid #0f0;
+            padding: 15px 30px;
+            color: #0f0;
+            text-decoration: none;
+            margin-top: 10px;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            cursor: pointer;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+            background: rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(0,255,0,0.3);
+            letter-spacing: 2px;
+        }
+
+        .link-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: #0f0;
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .link-btn:hover::before { left: 0; }
+        .link-btn:hover {
+            color: #000;
+            box-shadow: 0 0 30px rgba(0,255,0,0.6), inset 0 0 20px rgba(0,255,0,0.2);
+            transform: translateY(-2px);
+        }
+
+        .link-btn:active { transform: translateY(0); }
+
+        .secondary-link { color: #aaa; text-decoration: underline; }
+        .secondary-link:hover { color: #fff; text-shadow: 0 0 10px #fff; }
+
+        .version-tag {
+            color: green;
+            font-size: 1rem;
+            margin-top: 10px;
+            animation: fadeIn 1s ease-in 0.5s both;
+            text-shadow: 0 0 8px rgba(255,204,0,0.4);
+            letter-spacing: 1px;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #0f0, transparent);
+            margin: 40px 0;
+            animation: scanWidth 2s ease-in-out infinite;
+        }
+
+        @keyframes scanWidth {
+            0%,100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .footer-section {
+            margin-top: 60px;
+            border-top: 1px dashed #333;
+            padding-top: 30px;
+            text-align: center;
+            animation: fadeIn 1s ease-in 1s both;
+        }
+
+        @media (max-width: 768px) {
+            .engine-title { font-size: 2rem; letter-spacing: 2px; }
+            .section-title { font-size: 1.2rem; }
+            .welcome-container { padding: 10px; }
+            .section { padding: 15px; }
+            .link-btn { padding: 12px 24px; font-size: 0.9rem; }
+        }
+
+        @keyframes pulse {
+            0%,100% { box-shadow: 0 0 20px rgba(0,255,0,0.3); }
+            50% { box-shadow: 0 0 40px rgba(0,255,0,0.6); }
+        }
+
+        .link-btn.primary { animation: pulse 2s infinite; }
+
+        .about-section {
+            margin: 25px 0;
+            padding: 20px;
+            background: rgba(0,255,0,0.03);
+            border-left: 3px solid #0f0;
+            animation: fadeIn 1s ease-in 0.8s both;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .about-text {
+            color: #0f0;
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+
+        .prompt-symbol { color: #ffcc00; margin-right: 0.5rem; font-weight: bold; }
+
+        .feature-list { list-style: none; margin: 15px 0; padding: 0; }
+        .feature-list li {
+            padding: 8px 0 8px 25px;
+            position: relative;
+            color: #0f0;
+            opacity: 0.9;
+        }
+
+        .feature-list li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #ffcc00;
+            font-weight: bold;
+        }
+
+        .cta-subtitle {
+            color: #555;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanline"></div>
+    <div class="crt-flicker"></div>
+    <div class="container">
+        <div class="output-area">
+            <div class="welcome-container">
+
+                <div class="log-entry system">
+                    <h1 class="engine-title glow">BASELINE ENGINE</h1>
+                    <div class="version-tag">.// NEXT GENERATION TEXT BASED GAME ENGINE [OPEN SOURCE] </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title glow-yellow">What is Baseline Engine?</div>
+                    <p>
+                        <span class="desc-highlight">Baseline Engine</span> is my experiment in merging old-school text adventures with modern AI. It's still under heavy development, but the core idea is simple: you type naturally, and the engine figures out what you mean.
+                    </p>
+                    <p>
+                        Instead of strict commands, you can just say things like <em>"take a closer look at that strange rock"</em>. The engine uses LLM-powered intent detection to map your input to the right action.
+                    </p>
+
+                    <ul class="feature-list">
+                        <li><strong>AI Intent Recognition:</strong> Works with local or remote models like Ollama, Gemini, OpenAI or your own endpoints.</li>
+                        <li><strong>Visual Story Editor:</strong> Build complex branching stories without writing JSON manually.</li>
+                        <li><strong>Correction System:</strong> Fix misunderstood commands and teach the AI how it should behave.</li>
+                        <li><strong>Plugin Architecture:</strong> Extend or override engine behaviour however you like.</li>
+                        <li><strong>Retro Terminal UI:</strong> A full CRT-inspired interface wrapped as a PWA.</li>
+                    </ul>
+
+                    <br>
+                    <div style="text-align: center;">
+                        <a href="/play" class="link-btn primary glow" style="font-size: 1.5rem;">[ START NOW ]</a>
+                        <div class="cta-subtitle">Explore available stories and test the engine</div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section">
+                    <div class="section-title glow-yellow">Open Source & Community</div>
+                    <p>
+                        The engine is fully open source and completely modular. You can extend mechanics, add new AI providers, modify the UI or build your own subsystems without touching the core.
+                    </p>
+                    <p>
+                        This project is still evolving, and I welcome anyone who wants to contribute, test, or experiment.
+                    </p>
+
+                    <p><strong style="color:#ffcc00;">GitHub:</strong>
+                        <a href="https://github.com/yavuzitconsulting/baseline-engine" target="_blank" class="secondary-link">
+                            github.com/yavuzitconsulting/baseline-engine
+                        </a>
+                    </p>
+
+                    <p><strong style="color:#ffcc00;">Contact:</strong>
+                        <a href="mailto:baseline.engine@gmail.com" class="secondary-link">
+                            baseline.engine@gmail.com
+                        </a>
+                    </p>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section">
+                    <div class="section-title glow-yellow">Create Your Own Stories</div>
+                    <p>
+                        The integrated <strong style="color:#0f0;">Map Editor</strong> lets you design interactive stories visually. Rooms, connections, intents, conditions, and story states can all be created directly in the editor.
+                    </p>
+                    <p>
+                        Once you're done, you can test your story instantly inside the engine. No manual JSON editing required.
+                    </p>
+
+                    <br>
+                    <a href="http://localhost:3005" target="_blank" class="link-btn glow">[ OPEN MAP EDITOR ]</a>
+                </div>
+
+                <div class="footer-section">
+                    <p style="color:#555; margin-bottom:10px;">SYSTEM ARCHITECT</p>
+                    <a href="https://tangelo.com.tr" target="_blank" class="secondary-link" style="font-size:1.1rem;">Ramazan Yavuz</a>
+                </div>
+
+                <div class="about-section">
+                    <div class="about-text">
+                        <span class="prompt-symbol">></span>
+                        I'm <strong>Ramazan</strong>, a full stack developer and consultant. I love mixing retro vibes with modern AI and building tools that feel fun and alive. Baseline Engine is still in development, but it's already becoming something special.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playHover() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        document.querySelectorAll('.link-btn').forEach(btn => {
+            btn.addEventListener('mouseenter', playHover);
+        });
+
+        document.querySelectorAll('.link-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            });
+        });
+    </script>
+</body>
+</html>

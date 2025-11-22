@@ -1,0 +1,8 @@
+{
+  "id": "baseline_engine",
+  "title": "Baseline Engine Tour",
+  "description": "A hands-on technical tour of the Baseline Engine functionalities, guided by the developer.",
+  "authorName": "Ramazan Yavuz (RaY)",
+  "authorId": "ramazan_yavuz",
+  "startNode": "intro"
+}

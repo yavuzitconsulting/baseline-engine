@@ -1,0 +1,291 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
+const fs = require('fs');
+const http = require('http'); // Required for exposing the server instance
+const ProviderFactory = require('./engine/ai/ProviderFactory');
+const MockAIService = require('./engine/MockAIService');
+const SessionManager = require('./engine/SessionManager');
+const GameEngine = require('./engine/GameEngine');
+const redis = require('./engine/RedisClient');
+const PluginManager = require('./engine/PluginManager');
+
+const app = express();
+const server = http.createServer(app); // Create server explicitly to pass to plugins
+const PORT = process.env.PORT || 3000;
+
+// Global Logging Timestamp Override
+const originalLog = console.log;
+const originalWarn = console.warn;
+const originalError = console.error;
+
+function getTimestamp() {
+    return new Date().toISOString();
+}
+
+console.log = (...args) => originalLog(`[${getTimestamp()}]`, ...args);
+console.warn = (...args) => originalWarn(`[${getTimestamp()}]`, ...args);
+console.error = (...args) => originalError(`[${getTimestamp()}]`, ...args);
+
+// Initialize Core Systems
+const sessionManager = new SessionManager();
+const pluginManager = new PluginManager();
+
+// Services
+const useMock = process.env.USE_MOCK === 'true';
+let aiService;
+
+if (useMock) {
+    console.log("WARNING: Running with MOCK AI Service");
+    aiService = new MockAIService();
+} else {
+    try {
+        aiService = ProviderFactory.createProvider();
+    } catch (err) {
+        console.error("Failed to initialize AI Provider:", err);
+        process.exit(1);
+    }
+}
+
+// Game Engine (now with plugin manager)
+const gameEngine = new GameEngine(aiService, sessionManager, pluginManager);
+
+// --- PLUGIN SYSTEM INITIALIZATION ---
+// 1. Load Plugins
+// 2. Register Plugin Static Routes (Override Core)
+// 3. Execute server:init hook
+(async () => {
+    await pluginManager.loadPlugins();
+
+    // Register Plugin Public Directories (Higher priority plugins first)
+    // This allows plugins to override index.html or style.css
+    const plugins = pluginManager.getSortedPlugins();
+    for (const plugin of plugins) {
+        const publicPath = path.join(plugin.dirPath, 'public');
+        if (fs.existsSync(publicPath)) {
+            console.log(`[Server] Registering static override for ${plugin.id}: ${publicPath}`);
+            app.use(express.static(publicPath));
+        }
+    }
+
+    // Core Static Files (Fallback)
+    app.use(express.static(path.join(__dirname, '../public')));
+
+    // Routes
+    app.get('/play', (req, res) => {
+        res.sendFile(path.join(__dirname, '../public/play.html'));
+    });
+
+    // Execute Init Hook
+    await pluginManager.executeHook('broadcast', 'server:init', {
+        app,
+        server,
+        redis,
+        gameEngine
+    });
+})();
+
+// Middleware
+app.use(bodyParser.json());
+
+// Request Logging Middleware
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        const timestamp = new Date().toISOString();
+        console.log(`[API] ${timestamp} | ${req.method} ${req.path}`);
+        if (req.method === 'POST' && req.body) {
+            const safeBody = { ...req.body };
+            if (safeBody.input) safeBody.input = `"${safeBody.input}"`;
+            console.log(`[API] Body: ${JSON.stringify(safeBody)}`);
+        }
+    }
+    next();
+});
+
+// Story Pre-loader
+async function preloadStories() {
+    const storiesPath = path.join(process.cwd(), 'stories');
+    if (!fs.existsSync(storiesPath)) return;
+
+    console.log('[Server] Preloading stories into Redis .. from ' + storiesPath);
+    const stories = fs.readdirSync(storiesPath);
+    console.log("stories obj: "+ stories);
+
+    for (const storyId of stories) {
+        const storyDir = path.join(storiesPath, storyId);
+        if (!fs.lstatSync(storyDir).isDirectory()) continue;
+
+        // 1. Load Manifest
+        const manifestPath = path.join(storyDir, 'manifest.json');
+        if (fs.existsSync(manifestPath)) {
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+            await redis.setJson(`story:${storyId}:manifest`, manifest);
+            console.log(`   - Loaded Manifest: story:${storyId}:manifest`);
+        }
+
+        // 2. Load Nodes
+        const nodesDir = path.join(storyDir, 'nodes');
+        if (fs.existsSync(nodesDir)) {
+            const nodes = fs.readdirSync(nodesDir);
+            for (const nodeFile of nodes) {
+                if (!nodeFile.endsWith('.json')) continue;
+                const nodeId = path.basename(nodeFile, '.json');
+                const nodePath = path.join(nodesDir, nodeFile);
+                const nodeData = JSON.parse(fs.readFileSync(nodePath, 'utf8'));
+                await redis.setJson(`story:${storyId}:node:${nodeId}`, nodeData);
+                console.log(`   - Loaded Node: story:${storyId}:node:${nodeId}`);
+            }
+            console.log(`   - Loaded ${nodes.length} nodes for ${storyId}`);
+        }
+    }
+    console.log('[Server] Story preload complete.');
+}
+
+
+// API Routes
+
+// List all stories
+app.get('/api/stories', async (req, res) => {
+    try {
+        const storiesPath = path.join(process.cwd(), 'stories');
+        if (!fs.existsSync(storiesPath)) return res.json([]);
+
+        const stories = fs.readdirSync(storiesPath);
+        const result = [];
+
+        for (const storyId of stories) {
+            const storyDir = path.join(storiesPath, storyId);
+            if (!fs.lstatSync(storyDir).isDirectory()) continue;
+
+            // Try to get manifest from Redis first for speed
+            let manifest = await redis.getJson(`story:${storyId}:manifest`);
+
+            // Fallback to file if not in Redis (though preload should catch it)
+            if (!manifest) {
+                 const manifestPath = path.join(storyDir, 'manifest.json');
+                 if (fs.existsSync(manifestPath)) {
+                     manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                 }
+            }
+
+            if (manifest) {
+                result.push(manifest);
+            }
+        }
+        res.json(result);
+    } catch (error) {
+        console.error(`[Server] ERROR in /api/stories:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Start a new session
+app.post('/api/start', async (req, res) => {
+    try {
+        console.log(`[Server] Starting new session request...`);
+        const { storyId } = req.body;
+        const sessionId = await sessionManager.createSession();
+
+        // Plugin Hook: session:create (if needed, but startStory is usually where it happens)
+
+        const targetStory = storyId || 'protocol_01';
+        const result = await gameEngine.startStory(sessionId, targetStory);
+        console.log(`[Server] Session ${sessionId} started successfully for story ${targetStory}.`);
+        res.json({ sessionId, ...result });
+    } catch (error) {
+        console.error(`[Server] ERROR in /api/start:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Interact with the game
+app.post('/api/interact', async (req, res) => {
+    const { sessionId, input } = req.body;
+    if (!sessionId || !input) {
+        return res.status(400).json({ error: "Missing sessionId or input" });
+    }
+
+    try {
+        const result = await gameEngine.handleInput(sessionId, input);
+        res.json(result);
+    } catch (error) {
+        console.error(`[Server] ERROR in /api/interact for session ${sessionId}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get available intents for correction
+app.get('/api/intents', async (req, res) => {
+    const { sessionId } = req.query;
+    if (!sessionId) {
+        return res.status(400).json({ error: "Missing sessionId" });
+    }
+    try {
+        const intents = await gameEngine.getAvailableIntents(sessionId);
+        res.json(intents);
+    } catch (error) {
+        console.error(`[Server] ERROR in /api/intents for session ${sessionId}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Submit intent correction
+app.post('/api/correct-intent', async (req, res) => {
+    const { sessionId, input, correctIntentId } = req.body;
+    if (!sessionId || !input || !correctIntentId) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    try {
+        const session = await sessionManager.getSession(sessionId);
+        if (!session) return res.status(404).json({ error: "Session not found" });
+
+        // 1. Time Limit Check (60 seconds)
+        const TIME_LIMIT = 60000;
+        if (!session.lastInputTimestamp || (Date.now() - session.lastInputTimestamp > TIME_LIMIT)) {
+             return res.status(400).json({ error: "Correction time limit expired" });
+        }
+
+        // 2. Input Match Check (Ensure we are correcting the latest input)
+        // We must sanitize the incoming input exactly like the engine does to match the session record
+        const sanitizedInput = input.trim().toLowerCase().replace(/[^a-z0-9 ]/g, "");
+        if (session.lastInput !== sanitizedInput) {
+            return res.status(400).json({ error: "Can only correct the most recent input" });
+        }
+
+        // 3. Update Cache
+        // Reconstruct the key
+        const intentCacheKey = `intent_cache:${session.currentStory}:${session.currentNodeId}:${sanitizedInput}`;
+        await redis.set(intentCacheKey, correctIntentId);
+
+        console.log(`[Server] CORRECTION APPLIED: ${sanitizedInput} -> ${correctIntentId}`);
+
+        // Execute the intent immediately
+        const gameResponse = await gameEngine.handleInput(sessionId, input);
+
+        res.json({ success: true, message: "Intent recalibrated.", gameResponse });
+
+    } catch (error) {
+        console.error(`[Server] ERROR in /api/correct-intent:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Start Server
+server.listen(PORT, async () => {
+    // Ensure Redis is connected before preloading
+    await redis.connect();
+
+    await preloadStories();
+
+    console.log(`
+    ==========================================
+    BASELINE ENGINE ONLINE
+    PORT: ${PORT}
+    MODE: ${process.env.NODE_ENV || 'development'}
+    AI PROVIDER: ${process.env.AI_PROVIDER || 'ollama'}
+
+    Access the app at: http://localhost:${PORT}
+    ==========================================
+    `);
+});

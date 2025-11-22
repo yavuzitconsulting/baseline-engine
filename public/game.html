@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROTOCOL 01 [TERMINAL]</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+    <!-- Font Preload to prevent FOUT -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="scanline"></div>
+    <div class="crt-flicker"></div>
+    <div class="container">
+        <div id="output" class="output-area"></div>
+        <div id="statusBar" class="status-bar"></div>
+        <div class="input-area">
+            <span class="prompt">></span>
+            <input type="text" id="commandInput" autofocus autocomplete="off">
+        </div>
+        <button id="installBtn" class="install-btn" style="display: none;">[ INSTALL TERMINAL ]</button>
+    </div>
+    <script src="terminal.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('SW registered', reg))
+                .catch(err => console.log('SW failed', err));
+        }
+    </script>
+</body>
+</html>

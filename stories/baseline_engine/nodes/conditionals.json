@@ -1,0 +1,52 @@
+{
+  "id": "conditionals",
+  "text": "This is the Conditionals Chamber (`conditionals.json`).\n\nCurrently, you are seeing the default `text` property. However, this node contains a `text_conditionals` array. \n\nIf you flip that switch, the engine will set a state flag (`set_state`). When you `look` again (re-rendering the room), the engine will check `if_state` and serve a different description.\n\nGo ahead. For science.",
+  "text_revisit": "You are back in the Conditionals Chamber.",
+  "text_conditionals": [
+    {
+      "if_state": {
+        "test_switch_active": true
+      },
+      "text": "The room has changed. The lighting is red. \n\nThe engine matched `{ \"test_switch_active\": true }` in your session state and overrode the default text with this block.\n\nYou can now proceed to the Inventory Lab."
+    }
+  ],
+  "intents": [
+    {
+      "id": "help",
+      "description": "The user wants help.",
+      "action": "text",
+      "response": "DEBUG ASSISTANCE:\n- `flip switch`: Toggle the state flag.\n- `proceed`: Move to Inventory Lab (requires switch active).",
+      "intent_description": "Wants help"
+    },
+    {
+      "id": "flip_switch",
+      "description": "The user wants to flip the switch or activate the test.",
+      "text_description": "A large manual [SWITCH] is mounted on the wall.",
+      "action": "text",
+      "response": "Click. You flip the switch. \n(Internal: `set_state: { test_switch_active: true }`)",
+      "set_state": {
+        "test_switch_active": true
+      },
+      "intent_description": "Flip the switch or activate the test"
+    },
+    {
+      "id": "go_next",
+      "description": "The user wants to go to the inventory lab.",
+      "text_description": "The [EXIT] is unlocked.",
+      "action": "transition",
+      "target": "inventory",
+      "requires_state": {
+        "test_switch_active": true
+      },
+      "intent_description": "Go to the inventory lab"
+    },
+    {
+      "id": "go_back",
+      "description": "The user wants to go back.",
+      "text_description": "The [DOOR] back to Basics is behind you.",
+      "action": "transition",
+      "target": "basics",
+      "intent_description": "Go back"
+    }
+  ]
+}

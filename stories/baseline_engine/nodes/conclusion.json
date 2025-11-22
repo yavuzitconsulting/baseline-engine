@@ -1,0 +1,30 @@
+{
+  "id": "conclusion",
+  "text": "You have reached `conclusion.json`.\n\nThis concludes the hands-on tour of the Baseline Engine. \n\nWe have covered:\n- Node navigation (`transition`)\n- Dynamic text (`text_conditionals`)\n- Inventory (`pickup`, `requires`)\n- Visibility (`visible`, `reveals`)\n- State management (`set_state`)\n\nThank you for participating in this test protocol. Your data has been... discarded. \n\nType 'end' to terminate the session.",
+  "text_revisit": "It's over. Go home.",
+  "text_conditionals": [],
+  "intents": [
+    {
+      "id": "help",
+      "description": "The user wants help.",
+      "action": "text",
+      "response": "DEBUG ASSISTANCE:\n- `end`: Terminate session.",
+      "intent_description": "Wants help"
+    },
+    {
+      "id": "terminate",
+      "description": "The user wants to end the game.",
+      "text_description": "Terminate the [SESSION].",
+      "action": "end_game",
+      "intent_description": "End the game"
+    },
+    {
+      "id": "go_back",
+      "description": "The user wants to go back.",
+      "text_description": "The [way_back] to State Logic.",
+      "action": "transition",
+      "target": "state_logic",
+      "intent_description": "Go back"
+    }
+  ]
+}

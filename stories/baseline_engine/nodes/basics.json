@@ -1,0 +1,31 @@
+{
+  "id": "basics",
+  "text": "Welcome to `basics.json`. \n\nYou arrived here via a `transition` action defined in the previous node. The engine loaded this file based on the `target` property in the intent you triggered.\n\nTo move forward, we need to trigger another transition. In the code, this looks like: `\"action\": \"transition\", \"target\": \"conditionals\"`.\n\nLook around to find the way forward.",
+  "text_revisit": "You are back in `basics.json`. The concept remains the same: Intention -> Action -> Transition.",
+  "text_conditionals": [],
+  "intents": [
+    {
+      "id": "help",
+      "description": "The user wants help.",
+      "action": "text",
+      "response": "DEBUG ASSISTANCE:\n- `look around`: See available exits.\n- `proceed`: Move to the Conditionals test.",
+      "intent_description": "Wants help"
+    },
+    {
+      "id": "go_next",
+      "description": "The user wants to move to the next room or proceed.",
+      "text_description": "A heavy [DOOR] leads to the Conditionals Testing Chamber.",
+      "action": "transition",
+      "target": "conditionals",
+      "intent_description": "Move to the next room or proceed"
+    },
+    {
+      "id": "go_back",
+      "description": "The user wants to go back to the intro.",
+      "text_description": "The [WAY_BACK] leads to the Intro.",
+      "action": "transition",
+      "target": "intro",
+      "intent_description": "Go back to the intro"
+    }
+  ]
+}

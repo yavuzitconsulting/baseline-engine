@@ -1,0 +1,55 @@
+{
+  "id": "inventory",
+  "text": "Welcome to `inventory.json`. \n\nHere we demonstrate `pickup` actions, `visible` properties, and `reveals`. \n\nThere is a Keycard hidden here. You cannot see it yet because its intent has `\"visible\": false`. You must inspect the messy desk to trigger the `reveals` property, which adds the Keycard's intent to your view.\n\nThe door forward has a `requires` array containing the Keycard's ID.",
+  "text_revisit": "You are back in the Inventory Lab. Did you keep the Keycard?",
+  "text_conditionals": [],
+  "intents": [
+    {
+      "id": "help",
+      "description": "The user wants help.",
+      "action": "text",
+      "response": "DEBUG ASSISTANCE:\n- `inspect desk`: Reveal hidden items.\n- `take keycard`: Add item to inventory.\n- `open door`: Transition (requires keycard).",
+      "intent_description": "Wants help"
+    },
+    {
+      "id": "inspect_desk",
+      "description": "The user wants to inspect the desk.",
+      "text_description": "A messy [DESK] sits in the corner.",
+      "action": "text",
+      "response": "You shuffle through the papers. Underneath a coffee stained research paper, you find a Keycard. \n(Internal: Intent `take_keycard` is now visible.)",
+      "reveals": [
+        "take_keycard"
+      ],
+      "intent_description": "Inspect the desk"
+    },
+    {
+      "id": "take_keycard",
+      "description": "The user wants to pick up the keycard.",
+      "text_description": "A [KEYCARD] rests on the desk.",
+      "visible": false,
+      "action": "pickup",
+      "item_id": "test_keycard",
+      "response": "You took the keycard. \n(Internal: Item `test_keycard` added to `session.inventory`.)",
+      "intent_description": "Pick up the keycard"
+    },
+    {
+      "id": "go_next",
+      "description": "The user wants to go to the next room.",
+      "text_description": "A locked [security_door] blocks the path.",
+      "action": "transition",
+      "target": "state_logic",
+      "requires": [
+        "test_keycard"
+      ],
+      "intent_description": "Go to the next room"
+    },
+    {
+      "id": "go_back",
+      "description": "The user wants to go back.",
+      "text_description": "The [passage] back to Conditionals.",
+      "action": "transition",
+      "target": "conditionals",
+      "intent_description": "Go back"
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "id": "intro",
+  "text": "WELCOME TO THE POST-HUMAN ENCYCLOPEDIA TERMINAL v4.2.\nACCESS LEVEL: UNRESTRICTED.\n\nTHE 22 LINEAGES OF THE QU CYCLE.\n\nCOMMANDS:\n- `list` or `index`: View all available entries.\n- `search <name>`: Access a specific entry (e.g., `search The Qu` or just `Qu`).\n- `credits`: View database attribution.\n\nSYSTEM READY. WAITING FOR INPUT...",
+  "text_revisit": "TERMINAL READY.\nAWAITING INPUT...",
+  "text_conditionals": [],
+  "intents": [
+    {
+      "id": "list_index",
+      "description": "User wants to see the list of all entries or index.",
+      "action": "text",
+      "response": "POST-HUMAN ENCYCLOPEDIA INDEX:\n\n1. THE QU\n2. THE TITANS\n3. THE LOPSIDERS\n4. THE HAND-FOOTS\n5. THE TEMPTORS\n6. THE RUIN HAUNTERS\n7. THE PARASITES\n8. THE SAIL PEOPLE\n9. THE MODULAR PEOPLE\n10. THE SYMBIOTES\n11. THE WORMS\n12. THE AVIANS\n13. THE SNAKE PEOPLE\n14. THE BUG FACERS\n15. THE SPACERS\n16. THE TOOL BREEDERS\n17. THE ASTEROMORPHS\n18. THE QUATZELCOATL\n19. THE INSECTOPHAGI\n20. THE HEDONISTS\n21. THE DWELLERS\n22. THE SATYRIACS\n\n[SYSTEM]: Type the name of a species to access its data file.",
+      "intent_description": "See the list of all entries or index"
+    },
+    {
+      "id": "credits",
+      "description": "User wants to see the credits, author, or copyright information.",
+      "action": "text",
+      "response": "CREDITS & ATTRIBUTION\n\nSTORY AUTHOR: Ramzan Yavuz (Ray)\nBased on the universe and creatures created by C.M. Kosemen.\n\nDISCLAIMER:\nThis encyclopedia is a fan creation for the Baseline Engine.\n'All Tomorrows' and its concepts, species, and lore are the intellectual property of C.M. Kosemen.\nThis interactive adaptation is for educational and demonstration purposes only.\n\nFor the original work, please visit the author's relevant publications.",
+      "intent_description": "See the credits, author, or copyright information"
+    },
+    {
+      "id": "entry_qu",
+      "description": "User wants to read about The Qu.",
+      "action": "text",
+      "response": "1. THE QU\n\nOrigin Era: Prehuman Interference\nPeak Era: Age of Domination\nEnd Era: The Great Vanish\n\nAppearance and Biology:\nThe Qu are shifting, semi-translucent beings whose forms change shape depending on thought. Their bodies combine living tissue, geometric bone structures, pulsating light membranes, and flowing glyphs. They appear as living abstract sculptures. Their cities look like coral forests with glowing vascular networks.\n\nCulture:\nTheir entire civilization is devoted to biological mastery. Every structure, vehicle, and tool is alive. Hierarchy is absolute. The Qu believe that evolution is something to be sculpted directly, not observed. They organize species into castes.\n\nHistory:\nAfter conquering humanity, they remodel humans into specialized lineages. At their peak they maintain global and interspecies dominance. Their sudden disappearance leaves all their bio engineered civilizations in chaos.\n\nLegacy:\nTheir living ruins shape the next 100 thousand years of post-human evolution.",
+      "intent_description": "Read about The Qu"
+    },
+    {
+      "id": "entry_titans",
+      "description": "User wants to read about The Titans.",
+      "action": "text",
+      "response": "2. THE TITANS\n\nOrigin Era: Early Qu Domination\nPeak Era: Labor Colossus Age\nEnd Era: Infertility Collapse\n\nAppearance and Biology:\nTitans stand 4 to 8 meters tall with stone-like skin in gray or bronze tones. Faces are broad, arms thick as tree trunks, and hair grows in rope-like strands. Their internal organs are reinforced to handle mass.\n\nCulture:\nLife revolves around strength and endurance. Halls carved into cliffs echo with slow rhythm chants. Their philosophy treats burden as sacred. Elders are memory bearers.\n\nHistory:\nCreated as labor giants for the Qu. After the Qu vanish, Titans attempt independence but face genetic infertility.\n\nLegacy:\nTheir massive hall cities become monuments visited by later species.",
+      "intent_description": "Read about The Titans"
+    },
+    {
+      "id": "entry_lopsiders",
+      "description": "User wants to read about The Lopsiders.",
+      "action": "text",
+      "response": "3. THE LOPSIDERS\n\nOrigin Era: Early Divergence Period\nPeak Era: Still Thought Epoch\nEnd Era: Cognitive Decline\n\nAppearance and Biology:\nExtremely asymmetrical. One side heavily reinforced, the other compressed. Movement is shuffling and low to the ground. Skin is thick and dark. One eye enlarged for low horizontal light.\n\nCulture:\nA slow and contemplative people. Cities spread horizontally as layered platforms. Art is shallow carvings pressed into the ground. Philosophy focuses on patience, restraint, and gravity acceptance.\n\nHistory:\nInitially thrives in high gravity worlds. Over long eras they lose intelligence but retain spiritual practices.\n\nLegacy:\nHorizontal stone cities remain as silent continents.",
+      "intent_description": "Read about The Lopsiders"
+    },
+    {
+      "id": "entry_hand_foots",
+      "description": "User wants to read about The Hand-Foots.",
+      "action": "text",
+      "response": "4. THE HAND-FOOTS\n\nOrigin Era: Middle Qu Period\nPeak Era: Hearth Age\nEnd Era: Gradual Assimilation\n\nAppearance and Biology:\nQuadrupedal. Limbs end in blended hand-foot structures. Long torso, forward leaning head, large nostrils. Skin in clay and bark shades.\n\nCulture:\nPeaceful earth-bound societies. Homes are low domes. Genealogies are traced through foot-signatures preserved in soil. Known for herbal medicine.\n\nHistory:\nUnaffected by major wars. Slowly absorbed into the ecosystems they help stabilize.\n\nLegacy:\nTheir herbal techniques survive for millennia.",
+      "intent_description": "Read about The Hand-Foots"
+    },
+    {
+      "id": "entry_temptors",
+      "description": "User wants to read about The Temptors.",
+      "action": "text",
+      "response": "5. THE TEMPTORS\n\nOrigin Era: Middle Qu Period\nPeak Era: The Silver Courts\nEnd Era: Court Fracture\n\nAppearance and Biology:\nEngineered beauty. Luminous skin, large eyes, soft pheromone haze visible as shimmering mist. Features designed for attraction.\n\nCulture:\nTheir society is performance. Emotions are art. The Weave philosophy treats social connections as tapestries to craft. Power manifests through emotional resonance ceremonies.\n\nHistory:\nAfter the Qu vanish, their manipulative instincts turn inward. Courts collapse through intrigue spirals.\n\nLegacy:\nGolden opera arenas and emotional amphitheaters remain as ruins.",
+      "intent_description": "Read about The Temptors"
+    },
+    {
+      "id": "entry_ruin_haunters",
+      "description": "User wants to read about The Ruin Haunters.",
+      "action": "text",
+      "response": "6. THE RUIN HAUNTERS\n\nOrigin Era: Post-Qu Dawn\nPeak Era: Rediscovery Renaissance\nEnd Era: Ruin Dependency Collapse\n\nAppearance and Biology:\nLean frames, large irises for dim light, Qu glyph tattoos. Clothes are scavenged fabrics combined with living tissue grown from Qu biotech.\n\nCulture:\nDelvers devote their lives to studying ancient Qu structures. Their cities fuse human architecture with revived organic machines.\n\nHistory:\nTheir civilization rises quickly due to rediscovered Qu technology. It collapses once those structures decay beyond repair.\n\nLegacy:\nThey preserve critical knowledge that later helps the Spacers ascend.",
+      "intent_description": "Read about The Ruin Haunters"
+    },
+    {
+      "id": "entry_parasites",
+      "description": "User wants to read about The Parasites.",
+      "action": "text",
+      "response": "7. THE PARASITES\n\nOrigin Era: Middle Qu Period\nPeak Era: Symbiotic Cluster Age\nEnd Era: Ecological Narrowing\n\nAppearance and Biology:\nSmall, child-size bodies with soft nutrient pads on the abdomen or back. Pale skin and large helpless eyes.\n\nCulture:\nBonding with host animals is sacred. Villages built around host gardens. Rituals involve joining songs.\n\nHistory:\nSurvive for ages in stable niches but never develop independent technologies.\n\nLegacy:\nTheir host species become unusual relics in later ecosystems.",
+      "intent_description": "Read about The Parasites"
+    },
+    {
+      "id": "entry_sail_people",
+      "description": "User wants to read about The Sail People.",
+      "action": "text",
+      "response": "8. THE SAIL PEOPLE\n\nOrigin Era: Late Qu Period\nPeak Era: Ocean Currents Age\nEnd Era: Slow Maritime Fading\n\nAppearance and Biology:\nLong limbs with shimmering sail membranes. Smooth aquatic skin in seafoam colors. Eyes reflect ocean light.\n\nCulture:\nDrifting maritime societies. They navigate by sound and wind patterns. Wind monasteries teach philosophy.\n\nHistory:\nPersist peacefully for tens of thousands of years. Decline slowly as climates change.\n\nLegacy:\nTheir navigation songs become legendary.",
+      "intent_description": "Read about The Sail People"
+    },
+    {
+      "id": "entry_modular_people",
+      "description": "User wants to read about The Modular People.",
+      "action": "text",
+      "response": "9. THE MODULAR PEOPLE\n\nOrigin Era: Late Qu Period\nPeak Era: Adaptive Age\nEnd Era: Still ongoing\n\nAppearance and Biology:\nBodies reconfigurable at will. Limbs removable, organs repositionable. Skin soft and patterned. Appearance different each day.\n\nCulture:\nIdentity is fluid. Names shift with form. Functional guilds determine roles. Cities reshaped gradually to match needs.\n\nHistory:\nEndures indefinitely due to unmatched adaptability.\n\nLegacy:\nActs as a stabilizing posthuman culture for epochs.",
+      "intent_description": "Read about The Modular People"
+    },
+    {
+      "id": "entry_symbiotes",
+      "description": "User wants to read about The Symbiotes.",
+      "action": "text",
+      "response": "10. THE SYMBIOTES\n\nOrigin Era: Late Qu Period\nPeak Era: Harmonious Epoch\nEnd Era: Still ongoing\n\nAppearance and Biology:\nHumanoid bodies fused with plant or animal symbionts. Bioluminescent markings. Vines, plates, or tendrils across limbs.\n\nCulture:\nCouncil Rings represent both species. Architecture grown as living structures. Religion focuses on cycles of shared growth.\n\nHistory:\nBecome one of the most sustainable cultures ever to evolve.\n\nLegacy:\nTheir habitats survive for multiple geological eras.",
+      "intent_description": "Read about The Symbiotes"
+    },
+    {
+      "id": "entry_worms",
+      "description": "User wants to read about The Worms.",
+      "action": "text",
+      "response": "11. THE WORMS\n\nOrigin Era: Middle Qu Period\nPeak Era: Niche Stabilization\nEnd Era: Never ends\n\nAppearance and Biology:\nLimbless, moist bodied, earth toned worms. Circular mouth, sensory cilia instead of eyes.\n\nCulture:\nNot sapient. Create intricate tunnel systems.\n\nHistory:\nPersist through all ages in deep soil.\n\nLegacy:\nTheir tunnel layers record environmental history.",
+      "intent_description": "Read about The Worms"
+    },
+    {
+      "id": "entry_avians",
+      "description": "User wants to read about The Avians.",
+      "action": "text",
+      "response": "12. THE AVIANS\n\nOrigin Era: Late Qu Period\nPeak Era: Cloud Age\nEnd Era: Atmospheric Decay\n\nAppearance and Biology:\nWinged arms, feathered shoulders and backs. Light bones, sharp features. Reflective eyes.\n\nCulture:\nCliff cities, flock councils, sky layer spirituality. Music created with wind harps.\n\nHistory:\nThrives for millennia until atmospheric changes reduce flight ability.\n\nLegacy:\nTheir sky myths influence later spacefaring cultures.",
+      "intent_description": "Read about The Avians"
+    },
+    {
+      "id": "entry_snake_people",
+      "description": "User wants to read about The Snake People.",
+      "action": "text",
+      "response": "13. THE SNAKE PEOPLE\n\nOrigin Era: Divergence Period\nPeak Era: Spiral Epoch\nEnd Era: Fertility Collapse\n\nAppearance and Biology:\nLong serpentine lower bodies, shimmering scaled skin, slit pupils. Upper body humanoid.\n\nCulture:\nArchitecture is tube like. Mathematics based on cycles. Poetry is wave modulated.\n\nHistory:\nIntellectually advanced but genetically unstable over time.\n\nLegacy:\nTheir mathematical systems influence Tool Breeders.",
+      "intent_description": "Read about The Snake People"
+    },
+    {
+      "id": "entry_bug_facers",
+      "description": "User wants to read about The Bug Facers.",
+      "action": "text",
+      "response": "14. THE BUG FACERS\n\nOrigin Era: Middle Qu Period\nPeak Era: Hive Stabilization\nEnd Era: Ongoing\n\nAppearance and Biology:\nChitin faced, segmented features, sometimes compound eyes or mandible traits. Thick hardened skin.\n\nCulture:\nHive parliaments, rotating castes, pheromone storytelling.\n\nHistory:\nDevelop extremely stable societies that avoid collapse.\n\nLegacy:\nLongest running political structures in post-human history.",
+      "intent_description": "Read about The Bug Facers"
+    },
+    {
+      "id": "entry_spacers",
+      "description": "User wants to read about The Spacers.",
+      "action": "text",
+      "response": "15. THE SPACERS\n\nOrigin Era: Cosmic Reclamation\nPeak Era: Orbital Network Age\nEnd Era: Transition to Asteromorphs\n\nAppearance and Biology:\nElongated limbs, pale translucent skin, enlarged low light eyes. Constant floating posture.\n\nCulture:\nStar map history, spin temples, kinetic floating art, asteroid faction networks.\n\nHistory:\nSpread across orbital clusters and seed early stellar migrations.\n\nLegacy:\nBecome progenitors of Asteromorph evolution.",
+      "intent_description": "Read about The Spacers"
+    },
+    {
+      "id": "entry_tool_breeders",
+      "description": "User wants to read about The Tool Breeders.",
+      "action": "text",
+      "response": "16. THE TOOL BREEDERS\n\nOrigin Era: Bio-Renaissance\nPeak Era: Living Technology Age\nEnd Era: Continues\n\nAppearance and Biology:\nHumans who grow biological tools from their bodies. Keratin blades, chemical sacs, or sensory organs.\n\nCulture:\nTool orchards, bio mystic guilds, cities grown like forests of instruments.\n\nHistory:\nMajor innovators who develop new life based technologies.\n\nLegacy:\nTheir biotech becomes essential for space colonization.",
+      "intent_description": "Read about The Tool Breeders"
+    },
+    {
+      "id": "entry_asteromorphs",
+      "description": "User wants to read about The Asteromorphs.",
+      "action": "text",
+      "response": "17. THE ASTEROMORPHS\n\nOrigin Era: Stellar Expansion\nPeak Era: Star Dwelling Ascension\nEnd Era: Post Physical Transcendence\n\nAppearance and Biology:\nRibbon like bodies, bioluminescent glow, multi lensed eyes, floating silhouettes.\n\nCulture:\nPerceive time on stellar scales. Communicate via magnetic and gravitational pulses. Maintain a Stellar Archive.\n\nHistory:\nExpand through star systems and eventually transcend physical form.\n\nLegacy:\nFinal and most powerful form of humanity.",
+      "intent_description": "Read about The Asteromorphs"
+    },
+    {
+      "id": "entry_quatzelcoatl",
+      "description": "User wants to read about The Quatzelcoatl.",
+      "action": "text",
+      "response": "18. THE QUATZELCOATL\n\nOrigin Era: Regional Divergence\nPeak Era: Feathered Serpent Dominion\nEnd Era: Mythic Dissolution\n\nAppearance and Biology:\nFeathered serpents with iridescent plumage. Decorative crests, elegant elongated bodies.\n\nCulture:\nAerial glyph dances, wind tuned temples, sky ground balance philosophy.\n\nHistory:\nBrief but beautiful civilization that becomes legend.\n\nLegacy:\nTheir myths spread far beyond their extinction.",
+      "intent_description": "Read about The Quatzelcoatl"
+    },
+    {
+      "id": "entry_insectophagi",
+      "description": "User wants to read about The Insectophagi.",
+      "action": "text",
+      "response": "19. THE INSECTOPHAGI\n\nOrigin Era: Regional Divergence\nPeak Era: Chitin Age\nEnd Era: Ongoing\n\nAppearance and Biology:\nCompact bodies, powerful jaws, chitin hardened fingertips, earth toned camouflage skin.\n\nCulture:\nChitin villages, insect domestication, predation and renewal mythology.\n\nHistory:\nSurvive in harsh ecosystems others avoid.\n\nLegacy:\nKeep entire ecosystems running through careful predator management.",
+      "intent_description": "Read about The Insectophagi"
+    },
+    {
+      "id": "entry_hedonists",
+      "description": "User wants to read about The Hedonists.",
+      "action": "text",
+      "response": "20. THE HEDONISTS\n\nOrigin Era: Late Divergence\nPeak Era: Sensory Republic\nEnd Era: Cultural Self Consumption\n\nAppearance and Biology:\nVibrant skin pigments, glowing vascular patterns, colorful hair, hyper expressive bodies.\n\nCulture:\nSensory festivals, tactile art, political power through aesthetic mastery.\n\nHistory:\nRise rapidly in brilliance, collapse through excess.\n\nLegacy:\nLeave behind the most stunning artworks of all post-human cultures.",
+      "intent_description": "Read about The Hedonists"
+    },
+    {
+      "id": "entry_dwellers",
+      "description": "User wants to read about The Dwellers.",
+      "action": "text",
+      "response": "21. THE DWELLERS\n\nOrigin Era: Subterranean Retreat\nPeak Era: Cavern Harmony\nEnd Era: Ongoing\n\nAppearance and Biology:\nPale blue skin, bioluminescent spots, large eyes adapted to darkness, thin frames.\n\nCulture:\nFungal fiber clothing, cavern cities, quiet meditation traditions, surface pilgrimages.\n\nHistory:\nAvoid collapse through isolation. Thrive quietly underground.\n\nLegacy:\nTheir cities fossilize into spectacular glowing caverns.",
+      "intent_description": "Read about The Dwellers"
+    },
+    {
+      "id": "entry_satyriacs",
+      "description": "User wants to read about The Satyriacs.",
+      "action": "text",
+      "response": "22. THE SATYRIACS\n\nOrigin Era: Surface Divergence\nPeak Era: Herd Mother Epoch\nEnd Era: Climate Grazing Collapse\n\nAppearance and Biology:\nCentaur like. Fur covered lower body, muscular upper body, braided hair, strong bone structure.\n\nCulture:\nNomadic herding clans, star guided epics, council mothers leadership.\n\nHistory:\nCollapse when climate eliminates their grazing routes.\n\nLegacy:\nTheir celestial maps help future travelers cross barren continents.",
+      "intent_description": "Read about The Satyriacs"
+    }
+  ]
+}

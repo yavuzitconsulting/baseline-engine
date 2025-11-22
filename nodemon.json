@@ -1,0 +1,15 @@
+{
+  "watch": ["src", "public"],
+  "ext": "js,json,css,html",
+  "ignore": [
+    "sessions/*",
+    "redis_data/*",
+    "*.log",
+    "test/*",
+    "docs/*",
+    "node_modules"
+  ],
+  "execMap": {
+    "js": "node"
+  }
+}

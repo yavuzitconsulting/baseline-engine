@@ -1,0 +1,17 @@
+.install-btn {
+    background: transparent;
+    border: 1px solid var(--terminal-green);
+    color: var(--terminal-green);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-top: 10px;
+    align-self: flex-end;
+    text-shadow: 0 0 2px var(--terminal-green);
+}
+
+.install-btn:hover {
+    background: rgba(51, 255, 0, 0.1);
+    box-shadow: 0 0 5px var(--terminal-green);
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Baseline Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav id="top-nav">
+        <div class="nav-group">
+            <span class="brand">BASELINE EDITOR</span>
+            <button id="nav-new" class="nav-btn">New</button>
+            <button id="nav-load" class="nav-btn">Load</button>
+            <button id="nav-manifest" class="nav-btn">Settings</button>
+            <button id="nav-import" class="nav-btn">Import</button>
+            <button id="nav-export" class="nav-btn">Export</button>
+        </div>
+        <div class="nav-group">
+            <button id="nav-docs" class="nav-btn">Docs</button>
+            <button id="nav-publish" class="nav-btn" style="color: var(--accent)">Publish</button>
+            <button id="nav-login" class="nav-btn">Login</button>
+        </div>
+    </nav>
+    <!-- Hidden File Input -->
+    <input type="file" id="file-import" style="display:none" accept=".json">
+
+    <div id="app-container">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-controls">
+                <button id="new-node-btn" class="btn-primary">+ NEW NODE</button>
+            </div>
+            <div id="node-list"></div>
+        </aside>
+
+        <!-- Main Editor -->
+        <main id="editor-area" class="hidden">
+            <header class="editor-header">
+                <div class="id-group">
+                    <label>NODE ID:</label>
+                    <input type="text" id="node-id" placeholder="unique_node_id">
+                </div>
+                <div class="actions">
+                    <button id="save-btn" class="btn-primary">SAVE NODE (LOCAL)</button>
+                    <span id="status-msg" style="margin-left: 1rem; color: var(--success);"></span>
+                </div>
+            </header>
+
+            <div class="scroll-container">
+                <section class="card">
+                    <h2>DESCRIPTIONS</h2>
+                    <div class="form-group">
+                        <label>Primary Text</label>
+                        <textarea id="node-text" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Revisit Text</label>
+                        <textarea id="node-text-revisit" rows="2"></textarea>
+                    </div>
+                    <div class="sub-section">
+                        <div class="header-row">
+                            <label>Conditionals</label>
+                            <button id="add-conditional-btn" class="btn-small">+ Add</button>
+                        </div>
+                        <div id="conditionals-list"></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="header-row">
+                        <h2>INTENTS</h2>
+                        <button id="add-intent-btn" class="btn-primary">+ ADD INTENT</button>
+                    </div>
+                    <div id="intents-list"></div>
+                </section>
+            </div>
+        </main>
+
+        <div id="empty-state">
+            <p>CREATE OR SELECT A NODE TO EDIT</p>
+        </div>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Login Modal -->
+    <div id="modal-login" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Login / Register</h2>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="login-user">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-pass">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-login')">Cancel</button>
+                <button class="btn-primary" onclick="performLogin(false)">Login</button>
+                <button class="btn-primary" onclick="performLogin(true)">Register</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Modal -->
+    <div id="modal-load" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Load Story from Server</h2>
+            <p>Select a story to load into your local workspace.</p>
+            <div id="load-list" style="max-height: 300px; overflow-y: auto; margin: 1rem 0;"></div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-load')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manifest Modal -->
+    <div id="modal-manifest" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Story Settings</h2>
+            <div class="form-group">
+                <label>ID (Folder Name)</label>
+                <input type="text" id="m-id">
+            </div>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="m-title">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="m-desc" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Author ID (Read Only)</label>
+                <input type="text" id="m-auth" disabled>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-manifest')">Cancel</button>
+                <button class="btn-primary" onclick="saveManifest()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Docs Modal -->
+    <div id="modal-docs" class="modal-overlay hidden">
+        <div class="modal full-modal">
+            <div style="display:flex; justify-content:space-between;">
+                <h2>Documentation</h2>
+                <button class="btn-danger" onclick="closeModal('modal-docs')">X</button>
+            </div>
+            <div id="docs-content" class="modal-content-scroll">
+                Loading...
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

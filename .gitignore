@@ -1,0 +1,12 @@
+node_modules/
+sessions/
+ollama_data/
+redis_data/
+.env
+.DS_Store
+verification/
+package-lock.json
+*.log
+session.json
+/protocol_01.txt
+/.vscode/launch.json

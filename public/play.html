@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASELINE ENGINE [STORY SELECT]</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+
+    <!-- Font Preload -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: #000;
+            color: #0f0;
+            line-height: 1.6;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* CRT Effects */
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9999;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        .crt-flicker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 255, 0, 0.02);
+            pointer-events: none;
+            z-index: 9998;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.95; }
+        }
+
+        /* Full width container with better padding */
+        .container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            background: 
+                radial-gradient(ellipse at center, rgba(0, 40, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%),
+                #000;
+            box-shadow: inset 0 0 200px rgba(0, 255, 0, 0.1);
+        }
+
+        .output-area {
+            padding: 40px 20px;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        .welcome-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Enhanced header with glow */
+        .glow {
+            text-shadow: 
+                0 0 5px #0f0,
+                0 0 10px #0f0,
+                0 0 20px #0f0;
+        }
+
+        .glow-yellow {
+            text-shadow: 
+                0 0 5px #ffcc00,
+                0 0 10px #ffcc00;
+        }
+
+        .engine-title {
+            color: #ffcc00;
+            font-weight: bold;
+            font-size: 2rem;
+            letter-spacing: 4px;
+            text-shadow: 
+                0 0 5px #ffcc00,
+                0 0 10px #ffcc00;
+            animation: glitchText 3s infinite;
+            display: inline-block;
+        }
+
+        @keyframes glitchText {
+            0%, 90%, 100% { transform: translate(0); }
+            91% { transform: translate(-2px, 2px); }
+            92% { transform: translate(2px, -2px); }
+            93% { transform: translate(-2px, 2px); }
+            94% { transform: translate(2px, -2px); }
+        }
+
+        /* Enhanced story list with better spacing */
+        .story-list {
+            margin-top: 30px;
+        }
+
+        /* Enhanced story cards with glow and animation */
+        .story-item {
+            cursor: pointer;
+            padding: 25px;
+            border-left: 3px solid #0f0;
+            background: rgba(0, 255, 0, 0.02);
+            margin-bottom: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border-radius: 0 4px 4px 0;
+            box-shadow: -3px 0 0 #0f0, 0 0 30px rgba(0, 255, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .story-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 255, 0, 0.08);
+            transition: left 0.4s ease;
+            z-index: 0;
+        }
+
+        .story-item:hover::before {
+            left: 0;
+        }
+
+        .story-item:hover {
+            background: rgba(0, 255, 0, 0.08);
+            box-shadow: -3px 0 0 #0f0, 0 0 50px rgba(0, 255, 0, 0.3);
+            transform: translateX(5px);
+        }
+
+        .story-item > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .story-title {
+            font-weight: bold;
+            color: #ffcc00;
+            font-size: 1.4rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.4);
+        }
+
+        .story-title::before {
+            content: '▸ ';
+            color: #0f0;
+            margin-right: 8px;
+        }
+
+        .story-desc {
+            color: #0f0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+
+        /* Animated cursor */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1em;
+            background-color: #0f0;
+            animation: blink 1s infinite;
+            vertical-align: bottom;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Enhanced footer with divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #0f0, transparent);
+            margin: 40px 0;
+            animation: scanWidth 2s ease-in-out infinite;
+        }
+
+        @keyframes scanWidth {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .footer-link {
+            margin-top: 60px;
+            border-top: 1px dashed #333;
+            padding-top: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #555;
+            animation: fadeIn 1s ease-in 1s both;
+        }
+
+        .footer-link a {
+            color: #aaa;
+            text-decoration: underline;
+            transition: all 0.3s;
+        }
+
+        .footer-link a:hover {
+            color: #fff;
+            text-shadow: 0 0 10px #fff;
+        }
+
+        /* Selection instruction styling */
+        .selection-instruction {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #0f0;
+            background: rgba(0, 255, 0, 0.05);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            text-align: center;
+            color: #0f0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .engine-title {
+                font-size: 1.5rem;
+                letter-spacing: 2px;
+            }
+
+            .story-title {
+                font-size: 1.2rem;
+            }
+
+            .welcome-container {
+                padding: 10px;
+            }
+
+            .story-item {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="scanline"></div>
+    <div class="crt-flicker"></div>
+    <div class="container">
+        <div class="output-area">
+            <div class="welcome-container">
+                <div class="log-entry system">
+                    <span class="engine-title glow-yellow">BASELINE ENGINE</span><br>
+                    <span id="connecting-text"></span><span class="cursor"></span>
+                </div>
+                <div id="storyList" class="story-list" style="display:none;">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="footer-link">
+                    <p style="margin-bottom: 10px;">SYSTEM ARCHITECT</p>
+                    <a href="https://tangelo.com.tr" target="_blank">Ramazan Yavuz</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Logic for Menu
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playClick() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playHover() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        // Typing Animation
+        async function typeEffect(elementId, text, speed = 50) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = '';
+            for (let i = 0; i < text.length; i++) {
+                element.innerHTML += text.charAt(i);
+                await new Promise(r => setTimeout(r, speed));
+            }
+        }
+
+        async function loadStories() {
+            const list = document.getElementById('storyList');
+
+            // Run animation first
+            await typeEffect('connecting-text', 'CONNECTING TO STORY ARCHIVES...');
+            // Small pause
+            await new Promise(r => setTimeout(r, 500));
+
+            list.style.display = 'block';
+
+            try {
+                const res = await fetch('/api/stories');
+                const stories = await res.json();
+
+                list.innerHTML = '';
+
+                if (stories.length === 0) {
+                    list.innerHTML = '<div class="log-entry system">NO STORIES FOUND IN ARCHIVES.</div>';
+                    return;
+                }
+
+                stories.forEach(story => {
+                    const item = document.createElement('div');
+                    item.className = 'story-item';
+                    item.innerHTML = `
+                        <div class="story-title">${story.title.toUpperCase()}</div>
+                        <div class="story-desc">${story.description || 'No description available.'}</div>
+                    `;
+                    item.onclick = () => {
+                        playClick();
+                        setTimeout(() => {
+                            window.location.href = `/game.html?storyId=${story.id}`;
+                        }, 100);
+                    };
+                    item.addEventListener('mouseenter', playHover);
+                    list.appendChild(item);
+                });
+
+                const footer = document.createElement('div');
+                footer.className = 'selection-instruction';
+                footer.innerHTML = "SELECT A STORY TO BEGIN YOUR ADVENTURE";
+                list.appendChild(footer);
+
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<div class="log-entry system">CONNECTION FAILED. RETRYING...</div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadStories);
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "id": "state_logic",
+  "text": "This is `state_logic.json`. \n\nWe have tested simple state flags, but now let's talk about AI Confidence. \n\nIf you type something the AI doesn't understand, or if the confidence score is low, you might see a \"Challenge\" button (or Correction UI) appear next to the last environment message/output in the log. This allows you to manually map your input to a valid intent.\n\nTo test this, try typing something completely nonsensical like \"I want to dance with the moon\" and see if the system handles it or asks for clarification.\n\nOtherwise, just proceed to the conclusion.",
+  "text_revisit": "You returned to the State Logic node.",
+  "text_conditionals": [],
+  "intents": [
+    {
+      "id": "help",
+      "description": "The user wants help.",
+      "action": "text",
+      "response": "DEBUG ASSISTANCE:\n- `finish`: Go to the conclusion.",
+      "intent_description": "Wants help"
+    },
+    {
+      "id": "dance_moon",
+      "description": "The user wants to dance with the moon (Test Intent).",
+      "action": "text",
+      "response": "Surprisingly, I understood that. But usually, I wouldn't. If I failed, you'd see a correction option.",
+      "intent_description": "Dance with the moon (Test Intent)"
+    },
+    {
+      "id": "go_next",
+      "description": "The user wants to finish the tour.",
+      "text_description": "The [FINAL_DOOR] awaits.",
+      "action": "transition",
+      "target": "conclusion",
+      "intent_description": "Finish the tour"
+    },
+    {
+      "id": "go_back",
+      "description": "The user wants to go back.",
+      "text_description": "The [corridor] back to Inventory.",
+      "action": "transition",
+      "target": "inventory",
+      "intent_description": "Go back"
+    }
+  ]
+}

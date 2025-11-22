@@ -1,0 +1,8 @@
+{
+  "id": "all_tomorrows",
+  "title": "The Post-Human Encyclopedia",
+  "description": "An interactive terminal database detailing the 22 lineages of the Qu Cycle. Based on All Tomorrows by C.M. Kosemen.",
+  "authorName": "Ramzan Yavuz (Ray)",
+  "authorId": "ramazan_yavuz",
+  "startNode": "intro"
+}
