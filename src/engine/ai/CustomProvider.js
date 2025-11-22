@@ -4,8 +4,8 @@ const AIProvider = require('./AIProvider');
 class CustomProvider extends AIProvider {
     constructor(config = {}) {
         super(config);
-        // Default to localhost:3002 if not specified, assuming the user is running the proxy locally
-        this.apiUrl = process.env.CUSTOM_AI_URL || 'http://localhost:3002/generate';
+        // Default to localhost:3005 if not specified, assuming the user is running the proxy locally
+        this.apiUrl = process.env.CUSTOM_AI_URL || 'http://localhost:3005/generate';
         this.model = process.env.CUSTOM_AI_MODEL || config.model || null;
 
         console.log(`[CustomAI] Initialized. URL: ${this.apiUrl}`);
