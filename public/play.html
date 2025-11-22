@@ -14,7 +14,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css">
     <style>
         * {
             margin: 0;
@@ -24,11 +23,14 @@
 
         body {
             font-family: 'Share Tech Mono', monospace;
-            background: #000;
+            background: 
+                radial-gradient(ellipse at center, rgba(0, 40, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%),
+                #000;
             color: #0f0;
             line-height: 1.6;
             position: relative;
             min-height: 100vh;
+            padding: 40px 20px;
         }
 
         /* CRT Effects */
@@ -71,27 +73,10 @@
             50% { opacity: 0.95; }
         }
 
-        /* Full width container with better padding */
-        .container {
-            position: relative;
-            width: 100%;
-            min-height: 100vh;
-            background: 
-                radial-gradient(ellipse at center, rgba(0, 40, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%),
-                #000;
-            box-shadow: inset 0 0 200px rgba(0, 255, 0, 0.1);
-        }
-
-        .output-area {
-            padding: 40px 20px;
-            position: relative;
-            min-height: 100vh;
-        }
-
+        /* Full width content */
         .welcome-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
+            width: 100%;
+            max-width: none;
             animation: fadeIn 0.5s ease-in;
         }
 
@@ -121,7 +106,8 @@
             letter-spacing: 4px;
             text-shadow: 
                 0 0 5px #ffcc00,
-                0 0 10px #ffcc00;
+                0 0 10px #ffcc00,
+                0 0 20px #ffcc00;
             animation: glitchText 3s infinite;
             display: inline-block;
         }
@@ -265,6 +251,10 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
+            body {
+                padding: 20px 10px;
+            }
+
             .engine-title {
                 font-size: 1.5rem;
                 letter-spacing: 2px;
@@ -272,10 +262,6 @@
 
             .story-title {
                 font-size: 1.2rem;
-            }
-
-            .welcome-container {
-                padding: 10px;
             }
 
             .story-item {
@@ -287,22 +273,19 @@
 <body>
     <div class="scanline"></div>
     <div class="crt-flicker"></div>
-    <div class="container">
-        <div class="output-area">
-            <div class="welcome-container">
-                <div class="log-entry system">
-                    <span class="engine-title glow-yellow">BASELINE ENGINE</span><br>
-                    <span id="connecting-text"></span><span class="cursor"></span>
-                </div>
-                <div id="storyList" class="story-list" style="display:none;">
-                    <!-- Populated by JS -->
-                </div>
+    
+    <div class="welcome-container">
+        <div class="log-entry system">
+            <span class="engine-title glow-yellow">BASELINE ENGINE</span><br>
+            <span id="connecting-text"></span><span class="cursor"></span>
+        </div>
+        <div id="storyList" class="story-list" style="display:none;">
+            <!-- Populated by JS -->
+        </div>
 
-                <div class="footer-link">
-                    <p style="margin-bottom: 10px;">SYSTEM ARCHITECT</p>
-                    <a href="https://tangelo.com.tr" target="_blank">Ramazan Yavuz</a>
-                </div>
-            </div>
+        <div class="footer-link">
+            <p style="margin-bottom: 10px;">SYSTEM ARCHITECT</p>
+            <a href="https://tangelo.com.tr" target="_blank">Ramazan Yavuz</a>
         </div>
     </div>
 
