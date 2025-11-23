@@ -1129,3 +1129,293 @@ strong {
     padding: 12px;
   }
 }
+
+/* --- Game Interface Styles (Merged from style.css) --- */
+
+.game-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    width: 100%;
+    max-width: 1000px;
+    padding: 20px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    z-index: 2;
+    position: relative;
+    overflow: hidden; /* contain output */
+}
+
+.output-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    line-height: 1.5;
+    padding-right: 10px;
+    color: var(--text);
+}
+
+.output-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.output-area::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 2px;
+}
+
+.output-area::-webkit-scrollbar-track {
+    background: var(--bg-elevated);
+}
+
+.input-area {
+    display: flex;
+    align-items: center;
+    border-top: 1px solid var(--accent);
+    padding-top: 15px;
+    padding-bottom: 10px;
+}
+
+.prompt {
+    margin-right: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+/* Target specifically the game input if possible, or generic */
+input[type="text"] {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    flex-grow: 1;
+    outline: none;
+    text-shadow: 0 0 2px var(--accent);
+}
+
+/* Log Entry Types */
+.log-entry.story {
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+.log-entry.user {
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 10px;
+}
+
+.log-entry.error {
+    color: var(--danger);
+    text-shadow: 0 0 3px var(--danger);
+}
+
+.log-entry.system {
+    color: #33ffff;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+/* Install Button */
+.install-btn {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-top: 10px;
+    align-self: flex-end;
+    text-shadow: 0 0 2px var(--accent);
+}
+
+.install-btn:hover {
+    background: var(--accent-soft);
+    box-shadow: 0 0 5px var(--accent);
+}
+
+/* Status Bar in Game Header */
+.game-status-bar {
+    font-size: 0.8rem;
+    color: #33ffff;
+    white-space: nowrap;
+}
+
+/* Transmission Tag */
+.transmission-tag {
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    margin-left: 10px;
+    opacity: 0.8;
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    text-shadow: none;
+}
+
+/* Challenge Button */
+.challenge-btn {
+    display: inline-block;
+    margin-left: 10px;
+    cursor: pointer;
+    color: var(--warning);
+    font-weight: bold;
+    text-shadow: 0 0 5px var(--warning);
+    transition: all 0.2s;
+}
+
+.challenge-btn:hover {
+    color: var(--danger);
+    text-shadow: 0 0 5px var(--danger);
+    transform: scale(1.1);
+}
+
+/* Modals */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: var(--bg);
+    border: 2px solid var(--accent);
+    padding: 20px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 0 20px var(--accent-soft);
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text);
+}
+
+.modal-header {
+    font-size: 1.2rem;
+    border-bottom: 1px solid var(--accent);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #33ffff;
+}
+
+.intent-option {
+    padding: 10px;
+    margin-bottom: 5px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text);
+}
+
+.intent-option:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+}
+
+.modal-close {
+    margin-top: 15px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--danger);
+}
+
+/* Minimal Header */
+.minimal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border-strong);
+    background: var(--bg-elevated);
+    z-index: 20;
+    position: relative;
+    height: 60px;
+    flex-shrink: 0;
+}
+
+.back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+.back-link:hover {
+    text-shadow: 0 0 5px var(--accent);
+    text-decoration: underline;
+}
+
+.engine-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    letter-spacing: 2px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.engine-link:hover {
+    color: var(--accent);
+    text-shadow: 0 0 8px var(--accent-soft);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.cat-icon {
+    font-size: 0.7rem;
+    white-space: pre;
+    color: var(--accent);
+    line-height: 1.1;
+    font-weight: bold;
+    text-align: center;
+    cursor: default;
+}
+
+.cat-eyes {
+    animation: blinkCat 5s infinite;
+}
+
+@keyframes blinkCat {
+    0%, 96%, 100% { opacity: 1; }
+    98% { opacity: 0; }
+}
+
+@media (max-width: 600px) {
+    .minimal-header {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+    .engine-link {
+        font-size: 1rem;
+        display: none; /* Hide title on very small screens if crowded, or just shrink */
+    }
+    .game-container {
+        padding: 10px;
+    }
+    .output-area {
+        font-size: 1rem;
+    }
+}

@@ -2,6 +2,7 @@ node_modules/
 sessions/
 ollama_data/
 redis_data/
+julies_toolset/
 .env
 .DS_Store
 verification/

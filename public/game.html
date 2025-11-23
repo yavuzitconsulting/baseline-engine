@@ -7,7 +7,7 @@
 
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#050607">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
@@ -16,22 +16,48 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css">
+    <!-- Use shared styles now -->
+    <link rel="stylesheet" href="public_styles.css">
 </head>
 <body>
-    <div class="scanline"></div>
-    <div class="crt-flicker"></div>
-    <div class="container">
-        <div id="output" class="output-area"></div>
-        <div id="statusBar" class="status-bar"></div>
-        <div class="input-area">
-            <span class="prompt">></span>
-            <input type="text" id="commandInput" autofocus autocomplete="off">
+    <div class="scanline-overlay"></div>
+    <div class="crt-glow"></div>
+
+    <div class="game-layout">
+        <!-- Minimal Header -->
+        <header class="minimal-header">
+            <a href="/play" class="back-link">[ < BACK ]</a>
+            <a href="https://baseline-engine.com" target="_blank" class="engine-link">BASELINE ENGINE</a>
+            <div class="header-right">
+                <span id="statusBar" class="game-status-bar"></span>
+                <!-- ASCII Cat Easter Egg -->
+                <div class="cat-icon">
+ /\_/\
+ (<span class="cat-eyes">o.o </span>)
+ > ^ <
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Game Container -->
+        <div class="game-container">
+            <div id="output" class="output-area"></div>
+            <div class="input-area">
+                <span class="prompt">></span>
+                <input type="text" id="commandInput" autofocus autocomplete="off" class="game-input">
+            </div>
+            <!-- Keep install button, hidden by default -->
+            <button id="installBtn" class="install-btn" style="display: none;">[ INSTALL TERMINAL ]</button>
         </div>
-        <button id="installBtn" class="install-btn" style="display: none;">[ INSTALL TERMINAL ]</button>
     </div>
+
+    <!-- Include Public Scripts (for hover sounds etc if compatible) -->
+    <!-- Note: Terminal.js handles most sounds, but we can load this for future utility if needed.
+         Wait, terminal.js defines its own audio context. Let's just use terminal.js to avoid double initialization. -->
+
     <script src="terminal.js"></script>
     <script>
+        // PWA SW
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js')
                 .then(reg => console.log('SW registered', reg))
