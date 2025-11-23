@@ -30,6 +30,22 @@
                 <div class="sys-subtitle story-system-subtitle">
                     <span id="connecting-text"></span><span class="cursor"></span>
                 </div>
+
+                <!-- Filters -->
+                <div id="filter-bar" class="filter-bar" style="display:none;">
+                    <input type="text" id="search-input" placeholder="SEARCH DATABASE..." class="filter-input">
+                    <select id="sort-select" class="filter-select">
+                        <option value="title_asc">TITLE (A-Z)</option>
+                        <option value="title_desc">TITLE (Z-A)</option>
+                        <option value="date_desc">DATE (NEWEST)</option>
+                        <option value="date_asc">DATE (OLDEST)</option>
+                        <option value="lang_asc">LANGUAGE</option>
+                    </select>
+                    <select id="lang-filter" class="filter-select">
+                        <option value="ALL">ALL LANGUAGES</option>
+                    </select>
+                </div>
+
                 <!-- Added progress bar container for story loading -->
                 <div id="story-progress" class="progress-container" style="display:none; margin-top: 20px;">
                     <div class="progress-fill"></div>
@@ -70,10 +86,15 @@
             }
         }
 
+     
+
+        let allStories = [];
+
         async function loadStories() {
             const list = document.getElementById('storyList');
             const progressBar = document.getElementById('story-progress');
             const connectingText = document.getElementById('connecting-text');
+            const filterBar = document.getElementById('filter-bar');
 
             // Type the connecting message
             await typeEffect('connecting-text', 'CONNECTING TO STORY ARCHIVES...');
@@ -86,63 +107,122 @@
             connectingText.style.display = 'none';
 
             list.style.display = 'block';
+            filterBar.style.display = 'flex';
 
             try {
                 const res = await fetch('/api/stories');
-                const stories = await res.json();
+                allStories = await res.json();
 
-                list.innerHTML = '';
-
-                if (stories.length === 0) {
-                    list.innerHTML = '<div class="terminal-window"><div class="terminal-content"><p>NO STORIES FOUND IN ARCHIVES.</p></div></div>';
-                    return;
-                }
-
-                for (let i = 0; i < stories.length; i++) {
-                    const story = stories[i];
-                    const item = document.createElement('div');
-                    item.className = 'story-card';
-                    item.style.opacity = '0';
-                    item.style.transform = 'translateY(20px)';
-                    item.innerHTML = `
-                        <div class="story-card-header">
-                            <div class="story-indicator"></div>
-                        </div>
-                        <div class="story-card-content">
-                            <div class="story-title">${story.title.toUpperCase()}</div>
-                            <div class="story-desc">${story.description || 'No description available.'}</div>
-                        </div>
-                    `;
-                    item.onclick = () => {
-                        playClick();
-                        setTimeout(() => {
-                            window.location.href = `/game.html?storyId=${story.id}`;
-                        }, 100);
-                    };
-                    item.addEventListener('mouseenter', playHover);
-                    list.appendChild(item);
-
-                    // Animate in with delay
-                    await new Promise(r => setTimeout(r, 150));
-                    item.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    item.style.opacity = '1';
-                    item.style.transform = 'translateY(0)';
-                }
-
-                await new Promise(r => setTimeout(r, 200));
-                const footer = document.createElement('div');
-                footer.className = 'story-selection-instruction';
-                footer.style.opacity = '0';
-                footer.innerHTML = "SELECT A STORY TO BEGIN YOUR ADVENTURE";
-                list.appendChild(footer);
-                
-                await new Promise(r => setTimeout(r, 50));
-                footer.style.transition = 'opacity 0.5s ease';
-                footer.style.opacity = '1';
+                // Initialize Filters
+                setupFilters();
+                renderStories(allStories);
 
             } catch (err) {
                 console.error(err);
                 list.innerHTML = '<div class="terminal-window"><div class="terminal-content"><p>CONNECTION FAILED. RETRYING...</p></div></div>';
+            }
+        }
+
+        function setupFilters() {
+            const searchInput = document.getElementById('search-input');
+            const sortSelect = document.getElementById('sort-select');
+            const langFilter = document.getElementById('lang-filter');
+
+            // Populate Languages
+            const languages = new Set(allStories.map(s => s.language || 'en'));
+            languages.forEach(lang => {
+                const opt = document.createElement('option');
+                opt.value = lang;
+                opt.textContent = `LANG: ${lang.toUpperCase()}`;
+                langFilter.appendChild(opt);
+            });
+
+            const apply = () => applyFilters();
+            searchInput.oninput = apply;
+            sortSelect.onchange = apply;
+            langFilter.onchange = apply;
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const sort = document.getElementById('sort-select').value;
+            const lang = document.getElementById('lang-filter').value;
+
+            let filtered = allStories.filter(s => {
+                if (lang !== 'ALL' && (s.language || 'en') !== lang) return false;
+                if (!search) return true;
+                const text = `${s.title} ${s.description} ${s.authorName}`.toLowerCase();
+                return text.includes(search);
+            });
+
+            // Sorting
+            filtered.sort((a, b) => {
+                const dateA = new Date(a.date || '1970-01-01');
+                const dateB = new Date(b.date || '1970-01-01');
+
+                switch (sort) {
+                    case 'title_asc': return a.title.localeCompare(b.title);
+                    case 'title_desc': return b.title.localeCompare(a.title);
+                    case 'date_desc': return dateB - dateA; // Newest first
+                    case 'date_asc': return dateA - dateB;
+                    case 'lang_asc': return (a.language || 'en').localeCompare(b.language || 'en');
+                    default: return 0;
+                }
+            });
+
+            renderStories(filtered);
+        }
+
+        async function renderStories(stories) {
+            const list = document.getElementById('storyList');
+            list.innerHTML = '';
+
+            if (stories.length === 0) {
+                list.innerHTML = '<div class="terminal-window"><div class="terminal-content"><p>NO MATCHING STORIES FOUND.</p></div></div>';
+                return;
+            }
+
+            for (let i = 0; i < stories.length; i++) {
+                const story = stories[i];
+                const item = document.createElement('div');
+                item.className = 'story-card';
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(20px)';
+                
+                const langCode = story.language || 'en';
+                
+                // Format date as DD/MM/YYYY for display or just use US format as requested?
+                // User said "american format" for setting it, let's display nicely.
+                const displayDate = new Date(story.date || '2025-11-23').toLocaleDateString();
+
+                item.innerHTML = `
+                    <div class="story-card-header">
+                        <div class="story-indicator"></div>
+                        <div class="story-meta">
+                            <span class="story-date">${displayDate}</span>
+                            <span class="story-lan">${langCode}</span>
+                        </div>
+                    </div>
+                    <div class="story-card-content">
+                        <div class="story-title">${story.title.toUpperCase()}</div>
+                        <div class="story-desc">${story.description || 'No description available.'}</div>
+                    </div>
+                `;
+                item.onclick = () => {
+                    playClick();
+                    setTimeout(() => {
+                        window.location.href = `/game.html?storyId=${story.id}`;
+                    }, 100);
+                };
+                item.addEventListener('mouseenter', playHover);
+                list.appendChild(item);
+
+                // Animate in (staggered if it's initial load, but fast for filtering)
+                // For simplicity here, just quick fade
+                await new Promise(r => setTimeout(r, 50));
+                item.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
             }
         }
 

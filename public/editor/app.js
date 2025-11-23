@@ -13,7 +13,9 @@ const AppState = {
             description: '',
             authorName: '',
             authorId: '',
-            startNode: 'intro'
+            startNode: 'intro',
+            language: 'en',
+            date: new Date().toISOString().split('T')[0]
         },
         nodes: []
     },
@@ -60,11 +62,39 @@ const els = {
 };
 
 // --- Initialization ---
+const SUPPORTED_LANGUAGES = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'it', name: 'Italian' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'ru', name: 'Russian' },
+    { code: 'zh', name: 'Chinese' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'ko', name: 'Korean' },
+    { code: 'tr', name: 'Turkish' },
+    { code: 'pl', name: 'Polish' },
+    { code: 'nl', name: 'Dutch' }
+];
+
 function init() {
     checkUser();
     loadFromLocal();
     bindEvents();
     updateUI();
+    populateLanguageDropdown();
+}
+
+function populateLanguageDropdown() {
+    const select = document.getElementById('m-lang');
+    if (!select) return;
+    SUPPORTED_LANGUAGES.forEach(lang => {
+        const opt = document.createElement('option');
+        opt.value = lang.code;
+        opt.textContent = `${lang.name} [${lang.code.toUpperCase()}]`;
+        select.appendChild(opt);
+    });
 }
 
 function checkUser() {
@@ -159,7 +189,9 @@ function newStory() {
             description: '',
             authorName: AppState.user ? AppState.user.username : 'Anonymous',
             authorId: AppState.user ? AppState.user.username : '',
-            startNode: 'intro'
+            startNode: 'intro',
+            language: 'en',
+            date: new Date().toISOString().split('T')[0]
         },
         nodes: []
     };
@@ -530,6 +562,8 @@ async function populateManifestModal() {
     document.getElementById('m-title').value = AppState.storyData.manifest.title || '';
     document.getElementById('m-desc').value = AppState.storyData.manifest.description || '';
     document.getElementById('m-auth').value = AppState.storyData.manifest.authorId || (AppState.user ? AppState.user.username : '');
+    document.getElementById('m-lang').value = AppState.storyData.manifest.language || 'en';
+    document.getElementById('m-date').value = AppState.storyData.manifest.date || new Date().toISOString().split('T')[0];
 }
 
 function saveManifest() {
@@ -538,6 +572,8 @@ function saveManifest() {
     AppState.storyData.manifest.description = document.getElementById('m-desc').value;
     // Author ID is mostly controlled by login on publish, but we let them set it here for "Draft"
     AppState.storyData.manifest.authorId = document.getElementById('m-auth').value;
+    AppState.storyData.manifest.language = document.getElementById('m-lang').value;
+    AppState.storyData.manifest.date = document.getElementById('m-date').value;
 
     // Also update top-level ID if changed
     AppState.storyData.id = AppState.storyData.manifest.id;

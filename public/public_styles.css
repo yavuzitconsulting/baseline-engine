@@ -938,6 +938,7 @@ strong {
   border-bottom: 1px solid var(--border-strong);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   position: relative;
   z-index: 1;
@@ -949,6 +950,23 @@ strong {
   background: var(--accent);
   box-shadow: 0 0 10px var(--accent);
   animation: pulse 2s infinite;
+}
+
+.story-meta {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.story-date {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.story-lan {
+  font-size: 1.2rem;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
 }
 
 .story-card-content {
@@ -1023,6 +1041,55 @@ strong {
   .story-card-content {
     padding: 12px;
   }
+}
+
+/* Filter Bar */
+.filter-bar {
+  display: flex;
+  gap: 15px;
+  background: var(--bg-elevated);
+  padding: 15px;
+  border: 1px solid var(--border-strong);
+  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  animation: fadeInTerminal 0.5s ease-out 1s both;
+}
+
+.filter-input {
+  flex: 2;
+  min-width: 200px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 15px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.filter-input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 10px var(--accent-soft);
+}
+
+.filter-select {
+  flex: 1;
+  min-width: 150px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 15px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1rem;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  border-color: var(--accent);
+  outline: none;
 }
 
 /* Adding CSS for dynamically injected story elements */

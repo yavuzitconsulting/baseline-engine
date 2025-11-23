@@ -192,7 +192,7 @@ app.post('/api/publish', requireAuth, async (req, res) => {
         manifest.authorId = username;
 
         // 1.5 Validate Mandatory Fields (Manifest)
-        const MANDATORY_MANIFEST_FIELDS = ['id', 'title', 'description', 'authorId', 'authorName', 'startNode'];
+        const MANDATORY_MANIFEST_FIELDS = ['id', 'title', 'description', 'authorId', 'authorName', 'startNode', 'language', 'date'];
         const missingManifestFields = MANDATORY_MANIFEST_FIELDS.filter(field => !manifest[field]);
         if (missingManifestFields.length > 0) {
             return res.status(400).json({ error: `Manifest missing fields: ${missingManifestFields.join(', ')}` });

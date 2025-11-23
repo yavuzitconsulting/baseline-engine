@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const STORIES_DIR = path.join(process.cwd(), 'stories');
-const MANDATORY_MANIFEST_FIELDS = ['id', 'title', 'description', 'authorId', 'authorName', 'startNode'];
+const MANDATORY_MANIFEST_FIELDS = ['id', 'title', 'description', 'authorId', 'authorName', 'startNode', 'language', 'date'];
 
 console.log("Scanning stories for validation...");
 
