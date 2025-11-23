@@ -8,7 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentStoryId = urlParams.get('storyId') || 'protocol_01';
     const sessionKey = `session_${currentStoryId}`;
 
+    // History Key
     let sessionId = localStorage.getItem(sessionKey);
+    const getHistoryKey = (id) => `history_${id}`;
+
     let isTyping = false;
 
     // Audio System
@@ -61,6 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Typewriter Effect
    function typeText(element, text, speed = 10) {
     return new Promise((resolve) => {
+        // If speed is 0 (fast forward), render instantly
+        if (speed === 0) {
+            element.innerText = text;
+            resolve();
+            return;
+        }
+
         isTyping = true;
         let i = 0;
 
@@ -100,29 +110,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Append text to output
-    async function appendToLog(text, type = 'system', elapsedMs = null, isOptimized = false, isAiGenerated = false) {
+    async function appendToLog(text, type = 'system', elapsedMs = null, isOptimized = false, isAiGenerated = false, isHistoryReplay = false) {
+        // Save to history (if not replaying)
+        if (!isHistoryReplay && sessionId) {
+            saveHistory({
+                text,
+                type,
+                elapsedMs,
+                optimized: isOptimized,
+                isAiGenerated
+            });
+        }
+
         const entry = document.createElement('div');
         entry.className = `log-entry ${type}`;
         output.appendChild(entry);
 
+        // Speed: 0 for replay, 10 (default) for live
+        const speed = isHistoryReplay ? 0 : 10;
+
         if (type === 'user') {
             entry.innerText = text;
         } else {
-            await typeText(entry, text);
+            await typeText(entry, text, speed);
             if (elapsedMs !== null) {
                 const tag = document.createElement('span');
                 tag.className = 'transmission-tag';
                 tag.innerText = `[TRANSMITTED ${elapsedMs}MS${isOptimized ? ' / OPTIMIZED' : ''}]`;
                 entry.appendChild(tag);
 
-                // Add Challenge Button only if AI generated (cached or fresh)
-                if (isAiGenerated) {
+                // Add Challenge Button only if AI generated AND NOT REPLAY
+                // (Challenge buttons expire, so old ones are useless)
+                if (isAiGenerated && !isHistoryReplay) {
                     addChallengeButton(entry);
                 }
             }
         }
 
         output.scrollTop = output.scrollHeight;
+    }
+
+    // History Persistence Logic
+    function saveHistory(entry) {
+        if (!sessionId) return;
+        try {
+            const key = getHistoryKey(sessionId);
+            const history = JSON.parse(localStorage.getItem(key) || '[]');
+            history.push(entry);
+            localStorage.setItem(key, JSON.stringify(history));
+        } catch (e) {
+            console.error("Failed to save history:", e);
+        }
+    }
+
+    async function loadHistory() {
+        if (!sessionId) return;
+        const key = getHistoryKey(sessionId);
+        const history = JSON.parse(localStorage.getItem(key) || '[]');
+
+        if (history.length > 0) {
+             // Render history in fast-forward
+             for (const entry of history) {
+                 await appendToLog(
+                     entry.text,
+                     entry.type,
+                     entry.elapsedMs,
+                     entry.optimized,
+                     entry.isAiGenerated,
+                     true // isHistoryReplay
+                 );
+             }
+             // Add a spacer to indicate end of history
+             const spacer = document.createElement('div');
+             spacer.className = 'log-entry system';
+             spacer.innerHTML = '<span style="color:#444">--- SESSION RESTORED ---</span>';
+             spacer.style.margin = '20px 0';
+             spacer.style.textAlign = 'center';
+             output.appendChild(spacer);
+             output.scrollTop = output.scrollHeight;
+
+             // Check if session was finished
+             if (localStorage.getItem(`session_ended_${sessionId}`) === 'true') {
+                 // Disable input
+                 input.disabled = true;
+                 input.style.display = 'none';
+                 document.querySelector('.prompt').style.display = 'none';
+
+                 // Show restart button
+                 // We don't have author name easily here without saving it, but generic restart is fine or we can save author too
+                 // For now, generic restart is safer than passing undefined.
+                 showRestartButton();
+             }
+        }
     }
 
     function addChallengeButton(entryElement) {
@@ -269,7 +348,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.style.textShadow = '0 0 5px #ff3333';
 
         btn.addEventListener('click', () => {
-            localStorage.removeItem(sessionKey);
+            // Clear both session, history, and ended flag
+            if (sessionId) {
+                localStorage.removeItem(getHistoryKey(sessionId));
+                localStorage.removeItem(`session_ended_${sessionId}`);
+                localStorage.removeItem(sessionKey);
+            }
             window.location.reload();
         });
 
@@ -294,9 +378,21 @@ document.addEventListener('DOMContentLoaded', () => {
         output.scrollTop = output.scrollHeight;
     }
 
+    // Handle Session Expiration
+    function handleSessionExpired() {
+        localStorage.removeItem(sessionKey);
+        if (sessionId) {
+            localStorage.removeItem(getHistoryKey(sessionId));
+            localStorage.removeItem(`session_ended_${sessionId}`);
+        }
+        alert("SESSION SIGNAL LOST. RE-ESTABLISHING UPLINK...");
+        window.location.reload();
+    }
+
     // Initialize Session
     async function initSession() {
         if (!sessionId) {
+            // New Session
             try {
                 const res = await fetch('/api/start', {
                     method: 'POST',
@@ -314,11 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await appendToLog("CONNECTION ERROR: " + e.message, 'error');
             }
         } else {
-            // Re-established session - we might want to fetch current state/text?
-            // For now, just printing a resume message
-            // Ideally, we'd have an API to 'get_current_text' or similar
-            // But standard behavior is fine (user types 'look around')
-            // await appendToLog(`[SESSION RESUMED: ${currentStoryId.toUpperCase()}]`, 'system');
+            // Resume Session - Restore History First
+            await loadHistory();
         }
     }
 
@@ -359,7 +452,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             lastUserText = text; // Save for potential correction
 
-            appendToLog(`> ${text}`, 'user');
+            // We log user input BEFORE send (will be saved to history)
+            await appendToLog(`> ${text}`, 'user');
             input.value = '';
             input.disabled = true;
 
@@ -377,6 +471,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ sessionId, input: text })
                 });
                 const data = await res.json();
+
+                // Check for session expiry
+                if (data.error === 'SESSION_EXPIRED') {
+                    handleSessionExpired();
+                    return; // Stop processing
+                }
+
                 const elapsed = Date.now() - startTime;
 
                 if (data.text) {
@@ -384,11 +485,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (data.type === 'end') {
-                    localStorage.removeItem(sessionKey);
-                    sessionId = null;
+                    // Mark session as ended in local storage to persist disabled state
+                    localStorage.setItem(`session_ended_${sessionId}`, 'true');
 
                     // Open new tab as requested
-                    window.open('https://tangelo.com.tr', '_blank');
+                    window.open('https://ramazan-yavuz.tr', '_blank');
 
                     // Disable input permanently for this session
                     input.disabled = true;
@@ -406,8 +507,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Only re-enable if not ended
                 if (sessionId) {
-                    input.disabled = false;
-                    input.focus();
+                    // Check if game ended in UI logic
+                    const isEnded = output.lastElementChild && output.lastElementChild.classList.contains('restart-btn');
+                    if (!isEnded) {
+                         input.disabled = false;
+                         input.focus();
+                    }
                 }
             }
         }

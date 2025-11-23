@@ -168,12 +168,12 @@ class GameEngine {
         console.log(`[GameEngine] Handling input for session ${sessionId}: "${userInput}"`);
         let session = await this.sessions.getSession(sessionId);
         if (!session) {
-            console.warn(`[GameEngine] Session ${sessionId} not found. Auto-starting fresh story.`);
-            // Default/fallback story for missing sessions
-            const restart = await this.startStory(sessionId, 'protocol_01');
+            console.warn(`[GameEngine] Session ${sessionId} not found (Expired or Invalid).`);
+            // Stop auto-starting default stories to prevent cross-talk bugs
             return {
-                ...restart,
-                newSession: true
+                error: 'SESSION_EXPIRED',
+                text: 'Connection lost. Session expired.',
+                type: 'error'
             };
         }
 
@@ -392,9 +392,12 @@ class GameEngine {
                 isAiGenerated
             }, session);
         } else if (matchedIntent.action === 'end_game') {
-            // Mark session as complete but DO NOT delete it, allowing persistence
+            // Mark session as complete
             session.finished = true;
             await this.sessions.saveSession(sessionId, session);
+
+            // Archive session to disabled state
+            await this.sessions.archiveSession(sessionId);
 
             // Fetch Author Info
             const manifest = await this.redis.getJson(`story:${session.currentStory}:manifest`);
@@ -404,7 +407,7 @@ class GameEngine {
             return this._wrapResponse({
                 text: matchedIntent.response,
                 type: 'end',
-                redirect: 'http://tangelo.com.tr/baseline', // Updated URL
+                redirect: 'http://baseline-engine.com', // Updated URL
                 optimized: isOptimized,
                 isAiGenerated,
                 authorName,

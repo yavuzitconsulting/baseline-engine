@@ -92,6 +92,20 @@ class RedisClient {
         }
     }
 
+    async rename(key, newKey) {
+        if (this.connected) {
+            return await this.client.rename(key, newKey);
+        }
+
+        const val = this.memoryStore.get(key);
+        if (val !== undefined) {
+            this.memoryStore.set(newKey, val);
+            this.memoryStore.delete(key);
+            return 'OK';
+        }
+        throw new Error('ERR no such key');
+    }
+
     async quit() {
         if (this.connected) {
             await this.client.quit();

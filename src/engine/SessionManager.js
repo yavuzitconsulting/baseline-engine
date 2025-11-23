@@ -51,6 +51,16 @@ class SessionManager {
         console.log(`[SessionManager] Deleted session: ${sessionId}`);
     }
 
+    async archiveSession(sessionId) {
+        if (!this.isValidSessionId(sessionId)) return;
+        try {
+            await this.redis.rename(`session:${sessionId}`, `disabled_session:${sessionId}`);
+            console.log(`[SessionManager] Archived session: ${sessionId}`);
+        } catch (err) {
+            console.warn(`[SessionManager] Failed to archive session ${sessionId}: ${err.message}`);
+        }
+    }
+
     isValidSessionId(id) {
         return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     }
