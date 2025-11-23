@@ -12,7 +12,7 @@ const STORIES_DIR = path.join(process.cwd(), 'stories');
 const DISABLED_STORIES_DIR = path.join(process.cwd(), 'disabled_stories');
 const DOCS_PATH = path.join(process.cwd(), 'docs/MAP_CREATION_GUIDE.md');
 
-app.use(bodyParser.json({ limit: '50mb' })); // Increase limit for large bundles
+app.use(bodyParser.json({ limit: '10mb' })); // Decrease limit to prevent DoS
 app.use(express.static(path.join(process.cwd(), 'public/editor')));
 
 // --- AUTHENTICATION & REDIS ---
@@ -65,16 +65,71 @@ app.post('/api/auth/login', async (req, res) => {
 
         // Create Session
         const token = crypto.randomBytes(32).toString('hex');
-        await redis.setJson(`editor_session:${token}`, { username }, { EX: 86400 }); // 24h
+        const csrfToken = crypto.randomBytes(32).toString('hex');
+        await redis.setJson(`editor_session:${token}`, { username, csrfToken }, { EX: 86400 }); // 24h
 
-        res.json({ success: true, token, username });
+        res.json({ success: true, token, username, csrfToken });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
 
+// CSRF Middleware
+async function verifyEditorCsrf(req, res, next) {
+    const token = req.headers['x-editor-token'];
+    const csrfTokenHeader = req.headers['x-csrf-token'];
+
+    // For Register (no session yet), we need a different approach?
+    // Wait, register usually creates a user.
+    // If we want to protect Register against CSRF, we need a pre-login session/cookie.
+    // Given the editor is a simpler tool, maybe we only protect authenticated actions?
+    // The requirement said "protect the user creation endpoint with a CSRF Tokens".
+    // To do this, the client must first fetch a temporary session/token just to register.
+    // Or we use a Double Submit Cookie pattern just for the public endpoints.
+
+    // Strategy for Register:
+    // 1. Client calls GET /api/auth/csrf (creates a temp anonymous session)
+    // 2. Client calls POST /api/auth/register with that token.
+
+    let session = await getSession(req);
+
+    if (!session) {
+        // Try to handle anonymous CSRF for Register
+        const anonToken = req.headers['x-anon-token'];
+        if (anonToken) {
+             session = await redis.getJson(`editor_anon:${anonToken}`);
+        }
+    }
+
+    if (!session || !session.csrfToken) {
+         return res.status(403).json({ error: "Missing security session." });
+    }
+
+    if (session.csrfToken !== csrfTokenHeader) {
+         return res.status(403).json({ error: "Invalid security token." });
+    }
+
+    next();
+}
+
+// Public CSRF Endpoint (for Login/Register pages)
+app.get('/api/auth/csrf', async (req, res) => {
+    // Check if user is already logged in
+    const user = await getSession(req);
+    if (user && user.csrfToken) {
+        return res.json({ csrfToken: user.csrfToken });
+    }
+
+    // Otherwise create anonymous token
+    const anonToken = crypto.randomBytes(32).toString('hex');
+    const csrfToken = crypto.randomBytes(32).toString('hex');
+    await redis.setJson(`editor_anon:${anonToken}`, { csrfToken }, { EX: 3600 }); // 1 hour
+
+    res.json({ anonToken, csrfToken });
+});
+
 // API: Register
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', verifyEditorCsrf, async (req, res) => {
     try {
         const { username, password } = req.body;
         if (!username || !password) return res.status(400).json({ error: "Missing credentials" });
@@ -95,9 +150,10 @@ app.post('/api/auth/register', async (req, res) => {
 
         // Auto-login
         const token = crypto.randomBytes(32).toString('hex');
-        await redis.setJson(`editor_session:${token}`, { username });
+        const csrfToken = crypto.randomBytes(32).toString('hex');
+        await redis.setJson(`editor_session:${token}`, { username, csrfToken });
 
-        res.json({ success: true, token, username });
+        res.json({ success: true, token, username, csrfToken });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -118,9 +174,27 @@ app.get('/api/stories', (req, res) => {
         if (!fs.existsSync(STORIES_DIR)) {
             return res.json([]);
         }
-        const stories = fs.readdirSync(STORIES_DIR).filter(file => {
+        const dirs = fs.readdirSync(STORIES_DIR).filter(file => {
             return fs.statSync(path.join(STORIES_DIR, file)).isDirectory();
         });
+
+        const stories = [];
+        for (const dir of dirs) {
+            const manifestPath = path.join(STORIES_DIR, dir, 'manifest.json');
+            if (fs.existsSync(manifestPath)) {
+                try {
+                    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                    stories.push(manifest);
+                } catch (e) {
+                    // Fallback if manifest is corrupt
+                    stories.push({ id: dir, title: dir + ' (Corrupt Manifest)', description: 'Manifest error' });
+                }
+            } else {
+                // Fallback if manifest missing
+                stories.push({ id: dir, title: dir, description: 'No description' });
+            }
+        }
+
         res.json(stories);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -132,8 +206,8 @@ app.get('/api/bundle/:storyId', (req, res) => {
     try {
         const { storyId } = req.params;
 
-        // Sanitize ID
-        if (!/^[a-zA-Z0-9_-]+$/.test(storyId)) {
+        // Sanitize ID - ALLOW SPACES
+        if (!/^[a-zA-Z0-9 _-]+$/.test(storyId)) {
             return res.status(400).json({ error: "Invalid Story ID" });
         }
 
@@ -170,7 +244,7 @@ app.get('/api/bundle/:storyId', (req, res) => {
 });
 
 // Publish Bundle (Protected)
-app.post('/api/publish', requireAuth, async (req, res) => {
+app.post('/api/publish', requireAuth, verifyEditorCsrf, async (req, res) => {
     try {
         const { id, manifest, nodes } = req.body;
         const username = req.user.username;
@@ -179,16 +253,14 @@ app.post('/api/publish', requireAuth, async (req, res) => {
             return res.status(400).json({ error: "Invalid bundle format." });
         }
 
-        // Sanitize ID (Security)
-        if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
-            return res.status(400).json({ error: "Story ID can only contain letters, numbers, hyphens, and underscores." });
+        // Sanitize ID (Security) - ALLOW SPACES
+        if (!/^[a-zA-Z0-9 _-]+$/.test(id)) {
+            return res.status(400).json({ error: "Story ID can only contain letters, numbers, spaces, hyphens, and underscores." });
         }
 
-        // 1. Enforce Manifest AuthorID Consistency
-        if (manifest.authorId && manifest.authorId !== username) {
-             return res.status(403).json({ error: `You cannot publish as ${manifest.authorId}. You are logged in as ${username}.` });
-        }
-        // Force authorId to match login
+        // 1. Force authorId to match login (Implicit ownership)
+        // We do NOT check if manifest.authorId matches, we just claim it.
+        // This allows forking or updating without manually changing the JSON first.
         manifest.authorId = username;
 
         // 1.5 Validate Mandatory Fields (Manifest)
@@ -216,7 +288,7 @@ app.post('/api/publish', requireAuth, async (req, res) => {
         const storyDir = path.join(STORIES_DIR, id);
         const manifestPath = path.join(storyDir, 'manifest.json');
 
-        // 2. Check Existence & Ownership
+        // 2. Check Existence & Ownership (File System is Truth)
         if (fs.existsSync(storyDir)) {
             // Story exists - Check if we own it
             if (fs.existsSync(manifestPath)) {
@@ -242,18 +314,25 @@ app.post('/api/publish', requireAuth, async (req, res) => {
         const nodesDir = path.join(storyDir, 'nodes');
         if (!fs.existsSync(nodesDir)) fs.mkdirSync(nodesDir);
 
-        // Clean up old nodes?
-        // Strategy: We overwrite the folder content effectively?
-        // Requirement: "not delete stuff... that they are not allowed to"
-        // If I own the story, I should be able to delete my own nodes by omitting them from the bundle.
-        // So, let's clear the nodes directory first IF we own it.
+        // Security Check: Ensure nodesDir is actually inside storiesDir and not root
+        if (!nodesDir.startsWith(STORIES_DIR)) {
+             throw new Error("Security Error: Path traversal detected.");
+        }
+
+        // Clean up old nodes
         const oldFiles = fs.readdirSync(nodesDir);
         for (const f of oldFiles) {
-             fs.unlinkSync(path.join(nodesDir, f));
+             // Only delete JSON files to be safe
+             if (f.endsWith('.json')) {
+                fs.unlinkSync(path.join(nodesDir, f));
+             }
         }
 
         for (const node of nodes) {
-            if (!/^[a-zA-Z0-9_-]+$/.test(node.id)) {
+            // Allow spaces in Node IDs? Probably safer to stick to rigid IDs for nodes,
+            // but let's allow spaces if the story has them.
+            // Actually Node IDs act as filenames. Spaces in filenames are annoying but allowed.
+            if (!/^[a-zA-Z0-9 _-]+$/.test(node.id)) {
                 console.warn(`Skipping invalid node ID: ${node.id}`);
                 continue;
             }
@@ -270,13 +349,13 @@ app.post('/api/publish', requireAuth, async (req, res) => {
 });
 
 // Delete Story (Protected)
-app.post('/api/story/:storyId/delete', requireAuth, async (req, res) => {
+app.post('/api/story/:storyId/delete', requireAuth, verifyEditorCsrf, async (req, res) => {
     try {
         const { storyId } = req.params;
         const username = req.user.username;
 
-        // Sanitize ID
-        if (!/^[a-zA-Z0-9_-]+$/.test(storyId)) {
+        // Sanitize ID - ALLOW SPACES
+        if (!/^[a-zA-Z0-9 _-]+$/.test(storyId)) {
             return res.status(400).json({ error: "Invalid Story ID" });
         }
 
@@ -336,7 +415,8 @@ app.get('/api/docs', (req, res) => {
 app.get('/api/nodes/:storyId', (req, res) => {
     try {
         const { storyId } = req.params;
-        if (!/^[a-zA-Z0-9_-]+$/.test(storyId)) return res.status(400).json({ error: "Invalid ID" });
+        // Sanitize ID - ALLOW SPACES
+        if (!/^[a-zA-Z0-9 _-]+$/.test(storyId)) return res.status(400).json({ error: "Invalid ID" });
 
         const nodesDir = path.join(STORIES_DIR, storyId, 'nodes');
 
@@ -363,7 +443,8 @@ app.get('/api/nodes/:storyId', (req, res) => {
 app.get('/api/node/:storyId/:nodeId', (req, res) => {
     try {
         const { storyId, nodeId } = req.params;
-        if (!/^[a-zA-Z0-9_-]+$/.test(storyId) || !/^[a-zA-Z0-9_-]+$/.test(nodeId)) {
+        // Sanitize ID - ALLOW SPACES
+        if (!/^[a-zA-Z0-9 _-]+$/.test(storyId) || !/^[a-zA-Z0-9 _-]+$/.test(nodeId)) {
              return res.status(400).json({ error: "Invalid IDs" });
         }
 

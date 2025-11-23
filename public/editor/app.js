@@ -20,6 +20,7 @@ const AppState = {
         nodes: []
     },
     user: null, // { username, token }
+    csrfToken: null, // Security Token
     unsavedChanges: false
 };
 
@@ -80,10 +81,36 @@ const SUPPORTED_LANGUAGES = [
 
 function init() {
     checkUser();
+    initSecurity(); // Fetch CSRF
     loadFromLocal();
     bindEvents();
     updateUI();
     populateLanguageDropdown();
+}
+
+async function initSecurity() {
+    try {
+        const headers = {};
+        if (AppState.user && AppState.user.token) {
+            headers['x-editor-token'] = AppState.user.token;
+        }
+
+        const res = await fetch('/api/auth/csrf', { headers });
+        const data = await res.json();
+        // If logged in, we might get one token, if anonymous another.
+        // The server returns { csrfToken } or { anonToken, csrfToken }
+        if (data.csrfToken) {
+            AppState.csrfToken = data.csrfToken;
+        }
+        if (data.anonToken) {
+            // Save anon token to localStorage if needed?
+            // Actually server expects x-anon-token header if session not found.
+            // But we can just store it in memory or session storage.
+            sessionStorage.setItem('editor_anon_token', data.anonToken);
+        }
+    } catch (e) {
+        console.error("Failed to init security", e);
+    }
 }
 
 function populateLanguageDropdown() {
@@ -268,12 +295,15 @@ async function publishStory() {
 
     try {
         els.statusMsg.textContent = "Publishing...";
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-editor-token': AppState.user.token
+        };
+        if (AppState.csrfToken) headers['x-csrf-token'] = AppState.csrfToken;
+
         const res = await fetch('/api/publish', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-editor-token': AppState.user.token
-            },
+            headers: headers,
             body: JSON.stringify(AppState.storyData)
         });
 
@@ -536,14 +566,26 @@ async function performLogin(isRegister) {
     const url = isRegister ? '/api/auth/register' : '/api/auth/login';
 
     try {
+        const headers = {'Content-Type': 'application/json'};
+
+        // Add Security Headers
+        if (AppState.csrfToken) headers['x-csrf-token'] = AppState.csrfToken;
+
+        // For register (anonymous), we might need the anon token
+        const anonToken = sessionStorage.getItem('editor_anon_token');
+        if (anonToken && isRegister) headers['x-anon-token'] = anonToken;
+
         const res = await fetch(url, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: headers,
             body: JSON.stringify({ username: u, password: p })
         });
         const data = await res.json();
 
         if (res.ok) {
+            // Update Token if server rotated it or sent new one
+            if (data.csrfToken) AppState.csrfToken = data.csrfToken;
+
             AppState.user = { username: data.username, token: data.token };
             localStorage.setItem('editor_user', JSON.stringify(AppState.user));
             closeModal('modal-login');
@@ -608,8 +650,12 @@ async function fetchStoryList() {
         const btn = document.createElement('button');
         btn.className = 'btn-secondary full-width';
         btn.style.marginBottom = '0.5rem';
-        btn.textContent = s;
-        btn.onclick = () => loadFromServer(s);
+        // Handle object or legacy string
+        const title = s.title ? `${s.title} [${s.id}]` : (s.id || s);
+        const id = s.id || s;
+
+        btn.textContent = title;
+        btn.onclick = () => loadFromServer(id);
         list.appendChild(btn);
     });
 }

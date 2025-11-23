@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let sessionId = localStorage.getItem(sessionKey);
     const getHistoryKey = (id) => `history_${id}`;
 
+    // Security Token
+    let csrfToken = null;
+
     let isTyping = false;
 
     // Audio System
@@ -279,9 +282,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function submitCorrection(intentId, modal) {
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrfToken) headers['x-csrf-token'] = csrfToken;
+
             const res = await fetch('/api/correct-intent', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify({
                     sessionId,
                     input: lastUserText,
@@ -389,6 +395,20 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
     }
 
+    // Fetch Security Token
+    async function fetchCsrfToken() {
+        if (!sessionId) return;
+        try {
+            const res = await fetch(`/api/csrf-token?sessionId=${sessionId}`);
+            const data = await res.json();
+            if (data.csrfToken) {
+                csrfToken = data.csrfToken;
+            }
+        } catch (e) {
+            console.error("Failed to fetch security token", e);
+        }
+    }
+
     // Initialize Session
     async function initSession() {
         if (!sessionId) {
@@ -405,12 +425,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 sessionId = data.sessionId;
                 localStorage.setItem(sessionKey, sessionId);
+
+                // Fetch Token immediately after start
+                await fetchCsrfToken();
+
                 await appendToLog(data.text, data.type || 'story', null, false, data.isAiGenerated);
             } catch (e) {
                 await appendToLog("CONNECTION ERROR: " + e.message, 'error');
             }
         } else {
             // Resume Session - Restore History First
+            await fetchCsrfToken(); // Fetch token for resumed session
             await loadHistory();
         }
     }

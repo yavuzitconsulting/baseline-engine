@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
 const http = require('http'); // Required for exposing the server instance
+const crypto = require('crypto');
 const ProviderFactory = require('./engine/ai/ProviderFactory');
 const MockAIService = require('./engine/MockAIService');
 const SessionManager = require('./engine/SessionManager');
@@ -13,6 +14,12 @@ const PluginManager = require('./engine/PluginManager');
 const app = express();
 const server = http.createServer(app); // Create server explicitly to pass to plugins
 const PORT = process.env.PORT || 3000;
+
+// Redirect /editor requests to the Editor Server on port 3005
+app.use('/editor', (req, res) => {
+    const target = `${req.protocol}://${req.hostname}:3005${req.url}`;
+    res.redirect(target);
+});
 
 // Global Logging Timestamp Override
 const originalLog = console.log;
@@ -142,7 +149,75 @@ async function preloadStories() {
 }
 
 
+// Security Middleware: Verify CSRF Token
+async function verifyCsrf(req, res, next) {
+    const sessionId = req.body.sessionId || req.query.sessionId;
+    const token = req.headers['x-csrf-token'];
+
+    if (!sessionId) {
+        return res.status(400).json({ error: "Missing sessionId for CSRF check" });
+    }
+
+    // Bypass for start? No, start doesn't have a session yet usually.
+    // This middleware is intended for endpoints that REQUIRE a session.
+
+    try {
+        const session = await sessionManager.getSession(sessionId);
+        if (!session) {
+             return res.status(401).json({ error: "Invalid session" });
+        }
+
+        if (!session.csrfToken) {
+             // If session exists but no token (legacy?), maybe allow or fail?
+             // Let's generate one if missing? No, that defeats the purpose.
+             // Fail safe.
+             return res.status(403).json({ error: "Session missing security token. Please refresh." });
+        }
+
+        if (session.csrfToken !== token) {
+            console.warn(`[Security] CSRF Mismatch for session ${sessionId}. Expected ${session.csrfToken}, got ${token}`);
+            return res.status(403).json({ error: "Invalid security token" });
+        }
+
+        next();
+    } catch (err) {
+        console.error("[Security] CSRF Check Error:", err);
+        res.status(500).json({ error: "Security check failed" });
+    }
+}
+
+
 // API Routes
+
+// Generate CSRF Token
+app.get('/api/csrf-token', async (req, res) => {
+    const { sessionId } = req.query;
+    if (!sessionId) {
+        return res.status(400).json({ error: "Missing sessionId" });
+    }
+
+    try {
+        const session = await sessionManager.getSession(sessionId);
+        if (!session) {
+            return res.status(404).json({ error: "Session not found" });
+        }
+
+        // Generate new token if not exists, or return existing?
+        // Usually returning existing is fine for SPA.
+        // Rotating it on every get is safer but requires frontend synchronization.
+        let token = session.csrfToken;
+        if (!token) {
+            token = crypto.randomBytes(32).toString('hex');
+            session.csrfToken = token;
+            await sessionManager.saveSession(sessionId, session);
+        }
+
+        res.json({ csrfToken: token });
+    } catch (error) {
+        console.error(`[Server] ERROR in /api/csrf-token:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // List all stories
 app.get('/api/stories', async (req, res) => {
@@ -230,7 +305,7 @@ app.get('/api/intents', async (req, res) => {
 });
 
 // Submit intent correction
-app.post('/api/correct-intent', async (req, res) => {
+app.post('/api/correct-intent', verifyCsrf, async (req, res) => {
     const { sessionId, input, correctIntentId } = req.body;
     if (!sessionId || !input || !correctIntentId) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -256,6 +331,12 @@ app.post('/api/correct-intent', async (req, res) => {
         // 3. Update Cache
         // Reconstruct the key
         const intentCacheKey = `intent_cache:${session.currentStory}:${session.currentNodeId}:${sanitizedInput}`;
+
+        // Security: Sanitize correctIntentId to prevent cache pollution
+        if (!/^[a-zA-Z0-9_]+$/.test(correctIntentId)) {
+            return res.status(400).json({ error: "Invalid Intent ID format" });
+        }
+
         await redis.set(intentCacheKey, correctIntentId);
 
         console.log(`[Server] CORRECTION APPLIED: ${sanitizedInput} -> ${correctIntentId}`);

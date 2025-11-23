@@ -158,6 +158,66 @@ Set via `.env` or environment variables.
 -   Expanded editing tools\
 -   Story marketplace and discovery\
 -   More plugin capabilities
+-   Future: Community Intent Database (Open-ended community contribution system)
+
+------------------------------------------------------------------------
+
+# API Documentation
+
+The Baseline Engine exposes a RESTful API for game interaction and integration.
+
+### Start Session
+**POST** `/api/start`
+- **Body:** `{ "storyId": "string" }`
+- **Response:**
+  ```json
+  {
+    "sessionId": "uuid",
+    "text": "Initial story text...",
+    "type": "story",
+    "isAiGenerated": false
+  }
+  ```
+
+### Interact
+**POST** `/api/interact`
+- **Body:** `{ "sessionId": "uuid", "input": "string" }`
+- **Response:**
+  ```json
+  {
+    "text": "Response text...",
+    "type": "story",
+    "isAiGenerated": boolean,
+    "optimized": boolean
+  }
+  ```
+
+### Correct Intent (CSRF Protected)
+**POST** `/api/correct-intent`
+- **Headers:** `x-csrf-token: <token>`
+- **Body:**
+  ```json
+  {
+    "sessionId": "uuid",
+    "input": "original input string",
+    "correctIntentId": "intent_id"
+  }
+  ```
+- **Response:** `{ "success": true, "gameResponse": { ... } }`
+
+### List Stories
+**GET** `/api/stories`
+- **Response:** Array of Manifest objects.
+  ```json
+  [
+    {
+      "id": "story_id",
+      "title": "Story Title",
+      "authorName": "Author",
+      "date": "ISO-Date"
+    }
+  ]
+  ```
 
 ------------------------------------------------------------------------
 
