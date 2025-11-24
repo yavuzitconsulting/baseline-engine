@@ -1470,6 +1470,17 @@ input[type="text"] {
     98% { opacity: 0; }
 }
 
+.lock-icon-container {
+    display: inline-flex;
+    color: #ffcc00; /* Gold/Yellow */
+    cursor: help;
+    position: relative;
+}
+
+.lock-icon-container:hover svg {
+    color: #ff3333; /* Red on hover */
+}
+
 @media (max-width: 600px) {
     .minimal-header {
         padding: 5px 10px;

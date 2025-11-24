@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseline Engine - Map Creation Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/public_styles.css">
+    <style>
+        /* Local overrides for document readability */
+        .terminal-container {
+            max-width: 1200px; /* Wider for reading docs */
+        }
+        .doc-content {
+            text-align: left;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .doc-content h2 {
+            border-bottom: 1px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 40px;
+            color: var(--primary-color);
+            text-shadow: 0 0 5px var(--primary-color);
+        }
+        .doc-content h3 {
+            margin-top: 30px;
+            color: #fff;
+        }
+        .doc-content p {
+            margin-bottom: 15px;
+            color: #ccc;
+        }
+        .doc-content ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+        .doc-content li {
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #aaddff;
+            white-space: pre-wrap;
+            margin: 10px 0 20px 0;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 5px 10px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background: var(--primary-color);
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanline-overlay"></div>
+    <div class="crt-glow"></div>
+
+    <div class="terminal-container">
+        <div class="terminal-frame">
+            <div class="system-header">
+                <div class="sys-title">SYSTEM DOCUMENTATION</div>
+                <div class="sys-subtitle">ECHO PROTOCOL - MAP CREATION REFERENCE</div>
+            </div>
+
+            <div class="terminal-content doc-content">
+
+                <p>The Echo Protocol Game Engine is a text-based adventure engine powered by AI intent recognition. Stories are defined as a collection of JSON "Nodes," each representing a location or scene. The engine uses a combination of static descriptions, dynamic state-based conditionals, and AI-driven intent matching to navigate the story.</p>
+
+                <h2>1. Map Structure & Files</h2>
+                <p>Maps are organized by "Story" folders located in <code>stories/</code>. Each story must have:</p>
+                <ul>
+                    <li><code>manifest.json</code>: Defines the story metadata.</li>
+                    <li><code>nodes/</code>: A directory containing individual JSON files for each location.</li>
+                </ul>
+
+                <h3>Manifest Requirements</h3>
+                <p>The <code>manifest.json</code> file must contain the following fields:</p>
+                <ul>
+                    <li><code>id</code>: Unique identifier for the story (folder name).</li>
+                    <li><code>title</code>: Display title of the story.</li>
+                    <li><code>description</code>: Short description shown in the story selector.</li>
+                    <li><code>authorId</code>: The username of the creator (must match logged-in user).</li>
+                    <li><code>authorName</code>: Display name of the author.</li>
+                    <li><code>startNode</code>: The ID of the first node (usually "intro").</li>
+                    <li><code>locked</code>: (Optional) If true, prevents other users from forking/editing this story.</li>
+                </ul>
+
+                <h3>The "Intro" Rule</h3>
+                <p><strong>Every story must have an <code>intro.json</code> node.</strong> This is the hardcoded entry point for the Map Editor and typically the start of the game. When creating a new story, the first node you create <strong>must</strong> be named <code>intro</code>.</p>
+
+                <h2>2. Node Architecture</h2>
+                <p>A Node is a JSON object with the following primary fields:</p>
+                <ul>
+                    <li><code>id</code>: Unique ID (must match filename).</li>
+                    <li><code>text</code>: The main description of the room. <strong>(Mandatory unless <code>text_conditionals</code> covers all cases)</strong>.</li>
+                    <li><code>text_revisit</code>: Optional. A shorter description shown when returning to this room.</li>
+                    <li><code>text_conditionals</code>: Optional. Dynamic overrides for the description.</li>
+                    <li><code>intents</code>: Array of interaction objects.</li>
+                </ul>
+
+                <div class="code-block">
+{
+  "id": "node_id",
+  "text": "The main description of the room.",
+  "text_revisit": "Optional. A shorter description shown when returning to this room.",
+  "text_conditionals": [],
+  "intents": []
+}
+                </div>
+
+                <h3>Dynamic Descriptions (<code>text_conditionals</code>)</h3>
+                <p>You can override the main description based on the player's state (flags). The engine checks these in order; the first match wins.</p>
+
+                <div class="code-block">
+"text_conditionals": [
+    {
+        "if_state": { "lights_off": true },
+        "text": "The room is pitch black. You hear breathing."
+    },
+    {
+        "if_state": { "machinery_active": true },
+        "text": "The room vibrates with the hum of the machine."
+    }
+]
+                </div>
+
+                <h2>3. Intents & Interactivity</h2>
+                <p>Intents define what the user can do. The AI maps user input (e.g., "turn on the light") to these defined intents.</p>
+
+                <h3>Fields</h3>
+                <ul>
+                    <li><strong><code>id</code></strong>: Unique ID for the intent (e.g., <code>turn_on_light</code>).</li>
+                    <li><strong><code>ai_intent_helper</code></strong>: <strong>Crucial.</strong> The hint given to the AI to match user input. Format: "The user wants to..."</li>
+                    <li><strong><code>intent_description</code></strong>: <strong>Mandatory.</strong> A short, human-readable label shown in the Correction UI (Challenge Button) if the AI fails. Example: "Turn on light".</li>
+                    <li><strong><code>text_description</code></strong>: Used for the "Look Around" command. Describes the object in the scene.</li>
+                    <li><strong><code>action</code></strong>: The system action to trigger.
+                        <ul>
+                            <li><code>transition</code>: Move to another node. Requires <code>target</code>.</li>
+                            <li><code>text</code>: Show a response. Requires <code>response</code>.</li>
+                            <li><code>pickup</code>: Add an item to inventory. Requires <code>item_id</code>.</li>
+                            <li><code>end_game</code>: End the session (death/win).</li>
+                        </ul>
+                    </li>
+                    <li><strong><code>visible</code></strong>: (Boolean) If <code>false</code>, <code>text_description</code> is hidden until revealed (e.g., by another intent's <code>reveals</code>).</li>
+                </ul>
+
+                <h3>Logic & State</h3>
+                <ul>
+                    <li><strong><code>requires</code></strong>: Array of inventory item IDs required to use this intent.</li>
+                    <li><strong><code>requires_not</code></strong>: Array of inventory items that *block* this intent.</li>
+                    <li><strong><code>requires_state</code></strong>: Object. Game state must match these values. (e.g. <code>{ "power": "on" }</code>)</li>
+                    <li><strong><code>requires_not_state</code></strong>: Object. Game state must *not* match these values.</li>
+                    <li><strong><code>set_state</code></strong>: Object. Updates game state upon success. (e.g. <code>{ "lights_off": true }</code>)</li>
+                    <li><strong><code>reveals</code></strong>: Array of intent IDs to make visible (unhide) in the current room.</li>
+                </ul>
+
+                <h2>4. Linking Maps</h2>
+                <p>To link two rooms, use the <code>transition</code> action.</p>
+                <p><strong>Room A (<code>hallway.json</code>):</strong></p>
+                <div class="code-block">
+{
+  "id": "go_kitchen",
+  "ai_intent_helper": "The user wants to go to the kitchen.",
+  "intent_description": "Enter the kitchen",
+  "action": "transition",
+  "target": "kitchen"
+}
+                </div>
+                <p><strong>Room B (<code>kitchen.json</code>):</strong> Must exist as <code>nodes/kitchen.json</code>.</p>
+
+                <h2>5. Using the Map Editor</h2>
+                <ol>
+                    <li>Open the Editor via <code>/editor</code>.</li>
+                    <li>Select a Story (or start a new one by creating a folder in <code>stories/</code>).</li>
+                    <li><strong>Entry Point:</strong> If the story is empty, you will be prompted to create <code>intro</code>.</li>
+                    <li><strong>Builder Interface:</strong>
+                        <ul>
+                            <li><strong>Node Info:</strong> Edit ID and Descriptions.</li>
+                            <li><strong>Conditionals:</strong> Add dynamic text overrides.</li>
+                            <li><strong>Intents:</strong> Add interactions. Use the "Target" dropdown to link to existing nodes.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Save:</strong> Click "Save Node".</li>
+                </ol>
+
+                <h2>6. Best Practices</h2>
+                <ul>
+                    <li><strong>Interactivity:</strong> Every object mentioned in the description should have at least two intents (e.g., <code>inspect_x</code>, <code>touch_x</code>).</li>
+                    <li><strong>Navigation:</strong> Always provide a way back (unless it's a trap).</li>
+                    <li><strong>Atmosphere:</strong> Use <code>text_revisit</code> to make backtracking less repetitive.</li>
+                    <li><strong>Hidden Lore:</strong> Use <code>visible: false</code> intents revealed by <code>inspect</code> actions to reward exploration.</li>
+                    <li><strong>Ownership:</strong> If you lock your story (via Manifest Settings), others cannot fork it. Otherwise, open stories encourage community remixing.</li>
+                </ul>
+
+                <br><br>
+                <div style="text-align: center;">
+                    <a href="javascript:window.close()" class="back-btn">CLOSE WINDOW</a>
+                </div>
+
+            </div>
+
+            <div class="terminal-footer">
+                <div class="footer-label">BASELINE ENGINE</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

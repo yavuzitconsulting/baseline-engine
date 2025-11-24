@@ -156,9 +156,8 @@ function bindEvents() {
     if (lockToggle) {
         lockToggle.onclick = toggleLockState;
     }
-    els.btnDocs.onclick = async () => {
-        await loadDocs();
-        openModal('modal-docs');
+    els.btnDocs.onclick = () => {
+        window.open('/editor_help.html', '_blank');
     };
     els.btnTutorial.onclick = () => {
         startTutorialFlow();

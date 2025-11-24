@@ -68,6 +68,18 @@ You do **not** need coding experience.
 
 You can test your story immediately in the Terminal UI.
 
+### Story Ownership & Forking
+
+The engine promotes an open-source philosophy for storytelling.
+-   **Open Stories:** By default, stories are open. Any user can load another author's story into the editor.
+    -   When doing so, the system automatically "forks" the story.
+    -   The `authorId` is reset to the current user.
+    -   The editor enforces a new Title and ID to prevent overwriting the original.
+-   **Locked Stories:** Authors can optionally "Lock" their stories via the Story Properties menu.
+    -   Locked stories are marked with a 🔒 icon in the game.
+    -   Locked stories **cannot** be opened or forked by other users in the editor.
+    -   Only the original author can edit a locked story.
+
 ------------------------------------------------------------------------
 
 # For Developers: Extending the Engine
