@@ -95,11 +95,37 @@ const SUPPORTED_LANGUAGES = [
 function init() {
     checkUser();
     initSecurity();
+    initTracking();
     loadFromLocal();
     bindEvents();
     updateUI();
     populateLanguageDropdown();
     initTutorial();
+}
+
+async function initTracking() {
+    // Reuse existing visitor ID or generate new
+    let vid = localStorage.getItem('baseline_visitor_id');
+    if (!vid) {
+        vid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+        localStorage.setItem('baseline_visitor_id', vid);
+    }
+
+    try {
+        await fetch('/api/visit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ visitorId: vid })
+        });
+    } catch (e) {
+        console.warn("Tracking failed", e);
+    }
+
+    // Heartbeat: Ping every 5 minutes to keep session active in stats
+    setTimeout(initTracking, 5 * 60 * 1000);
 }
 
 async function initSecurity() {

@@ -93,8 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('stat-visitors-month').textContent = data.visitorsMonth;
                 document.getElementById('stat-active-sessions').textContent = data.activeSessions;
                 document.getElementById('stat-cached-msgs').textContent = data.cachedMessages;
+                document.getElementById('stat-creating-stories').textContent = data.creatingStories;
                 document.getElementById('stat-total-stories').textContent = data.totalStories;
                 document.getElementById('stat-forked-stories').textContent = data.forkedStories;
+                document.getElementById('stat-registered-users').textContent = data.registeredUsers;
 
             } catch (err) {
                 console.error("Stats fetch error:", err);

@@ -12,7 +12,9 @@ class StatsManager {
             activeSessions: 0,
             cachedMessages: 0,
             totalStories: 0,
-            forkedStories: 0
+            forkedStories: 0,
+            registeredUsers: 0,
+            creatingStories: 0
         };
 
         this.pendingVisits = new Set();
@@ -100,15 +102,23 @@ class StatsManager {
                 visitorsWeek,
                 visitorsMonth,
                 activeSessions,
-                cachedMessages
+                cachedMessages,
+                editorVisitors,
+                registeredUsers
             ] = await Promise.all([
                 redis.sCard('stats:visitors:all'),
                 redis.sCard(`stats:visitors:daily:${date}`),
                 redis.sCard(`stats:visitors:weekly:${week}`),
                 redis.sCard(`stats:visitors:monthly:${month}`),
                 redis.countKeys('session:*'),
-                redis.countKeys('intent_cache:*')
+                redis.countKeys('intent_cache:*'),
+                redis.countKeys('editor_visitor:*'),
+                // Always fallback to legacy count for accuracy until migration script is run
+                redis.countKeys('user:*:hash')
             ]);
+
+            // editor_visitor captures everyone in the editor (anon + logged in)
+            const creatingStories = editorVisitors;
 
             // File System Stats
             const { totalStories, forkedStories } = await this._getStoryStats();
@@ -121,7 +131,9 @@ class StatsManager {
                 activeSessions,
                 cachedMessages,
                 totalStories,
-                forkedStories
+                forkedStories,
+                registeredUsers,
+                creatingStories
             };
 
             // console.log('[StatsManager] Stats refreshed.'); // Verbose

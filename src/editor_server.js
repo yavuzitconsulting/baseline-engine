@@ -148,6 +148,9 @@ app.post('/api/auth/register', verifyEditorCsrf, async (req, res) => {
         const hash = await bcrypt.hash(password, 10);
         await redis.set(userKey, hash);
 
+        // Maintain a Set of all usernames for stats (O(1) counting)
+        await redis.sAdd('users:all', username);
+
         // Auto-login
         const token = crypto.randomBytes(32).toString('hex');
         const csrfToken = crypto.randomBytes(32).toString('hex');
@@ -163,6 +166,22 @@ app.post('/api/auth/register', verifyEditorCsrf, async (req, res) => {
 app.get('/api/auth/me', async (req, res) => {
     const user = await getSession(req);
     res.json({ user: user ? user.username : null });
+});
+
+// API: Visit (Tracking for Stats)
+app.post('/api/visit', async (req, res) => {
+    try {
+        const { visitorId } = req.body;
+        if (!visitorId) return res.status(400).json({ error: "Missing visitorId" });
+
+        // Track editor visitor for 10 minutes
+        await redis.set(`editor_visitor:${visitorId}`, '1', { EX: 600 });
+        res.json({ success: true });
+    } catch (e) {
+        // fail silently for analytics
+        console.error("Editor visit tracking error:", e);
+        res.json({ success: false });
+    }
 });
 
 
