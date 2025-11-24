@@ -36,3 +36,83 @@ document.querySelectorAll(".cmd-button, .inline-link, .feature-card, .contact-ca
 document.querySelectorAll(".cmd-button").forEach((btn) => {
   btn.addEventListener("click", playClick)
 })
+
+// --- VISITOR TRACKING & STATS ---
+
+// Generate simplified UUID
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+async function initVisitorTracking() {
+    let visitorId = localStorage.getItem('baseline_visitor_id');
+    if (!visitorId) {
+        visitorId = generateUUID();
+        localStorage.setItem('baseline_visitor_id', visitorId);
+    }
+
+    try {
+        await fetch('/api/visit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ visitorId })
+        });
+    } catch (err) {
+        console.error("Tracking error:", err);
+    }
+}
+
+// Stats Modal Logic
+document.addEventListener('DOMContentLoaded', () => {
+    initVisitorTracking();
+
+    const statsBtn = document.getElementById('stats-btn');
+    const statsModal = document.getElementById('stats-modal');
+    const closeStatsBtn = document.querySelector('.close-stats');
+
+    if (statsBtn && statsModal) {
+        statsBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            playClick();
+
+            // Show loading or clear previous
+            document.getElementById('stat-visitors-total').textContent = '...';
+
+            statsModal.style.display = 'flex';
+
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+
+                document.getElementById('stat-visitors-total').textContent = data.uniqueVisitors;
+                document.getElementById('stat-visitors-today').textContent = data.visitorsToday;
+                document.getElementById('stat-visitors-week').textContent = data.visitorsWeek;
+                document.getElementById('stat-visitors-month').textContent = data.visitorsMonth;
+                document.getElementById('stat-active-sessions').textContent = data.activeSessions;
+                document.getElementById('stat-cached-msgs').textContent = data.cachedMessages;
+                document.getElementById('stat-total-stories').textContent = data.totalStories;
+                document.getElementById('stat-forked-stories').textContent = data.forkedStories;
+
+            } catch (err) {
+                console.error("Stats fetch error:", err);
+                document.getElementById('stat-visitors-total').textContent = 'ERR';
+            }
+        });
+
+        if (closeStatsBtn) {
+            closeStatsBtn.addEventListener('click', () => {
+                statsModal.style.display = 'none';
+            });
+        }
+
+        // Click outside to close
+        statsModal.addEventListener('click', (e) => {
+            if (e.target === statsModal) {
+                statsModal.style.display = 'none';
+            }
+        });
+    }
+});

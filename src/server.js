@@ -10,6 +10,7 @@ const SessionManager = require('./engine/SessionManager');
 const GameEngine = require('./engine/GameEngine');
 const redis = require('./engine/RedisClient');
 const PluginManager = require('./engine/PluginManager');
+const statsManager = require('./engine/StatsManager');
 
 const app = express();
 const server = http.createServer(app); // Create server explicitly to pass to plugins
@@ -400,10 +401,31 @@ app.post('/api/correct-intent', verifyCsrf, async (req, res) => {
     }
 });
 
+// --- STATS ENDPOINTS ---
+
+// Register a visit
+app.post('/api/visit', (req, res) => {
+    const { visitorId } = req.body;
+    if (!visitorId) return res.status(400).json({ error: "Missing visitorId" });
+
+    // Use StatsManager to buffer writes
+    statsManager.recordVisit(visitorId);
+    res.json({ success: true });
+});
+
+// Get Stats
+app.get('/api/stats', (req, res) => {
+    // Return cached stats immediately
+    res.json(statsManager.getStats());
+});
+
 // Start Server
 server.listen(PORT, async () => {
     // Ensure Redis is connected before preloading
     await redis.connect();
+
+    // Initialize Stats Manager
+    await statsManager.init();
 
     await preloadStories();
 

@@ -220,6 +220,72 @@
                         I'm <strong>Ramazan (RaY)</strong>, a full stack developer and consultant. I love mixing retro vibes with modern AI and building tools that feel fun and alive. Baseline Engine is still in development, but it's already becoming something special.
                     </div>
                 </div>
+
+                <!-- Stats for Nerds Button -->
+                <div style="margin-top: 30px;">
+                    <button id="stats-btn" class="cmd-button" style="font-size: 0.8rem; padding: 10px 20px;">[ STATS FOR NERDS ]</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="stats-modal" class="modal" style="display: none;">
+        <div class="terminal-window" style="width: 500px; max-width: 90%; border-color: var(--accent);">
+            <div class="terminal-header" style="background: var(--bg-elevated); border-bottom-color: var(--accent);">
+                <div class="terminal-title">SYSTEM_STATISTICS.LOG</div>
+                <div class="window-controls">
+                    <div class="control-btn close close-stats"></div>
+                </div>
+            </div>
+            <div class="terminal-content" style="padding: 30px;">
+                <div class="cmd-line">
+                    <span class="cmd-prompt">></span>
+                    <div class="cmd-text">ACCESSING SYSTEM METRICS...</div>
+                </div>
+
+                <div class="info-box" style="border-left-color: var(--accent); margin: 20px 0;">
+                    <div class="info-label" style="color: var(--accent);">VISITOR DATA</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem;">
+                        <div>TOTAL UNIQUE:</div>
+                        <div id="stat-visitors-total" class="highlight-text">...</div>
+
+                        <div>TODAY:</div>
+                        <div id="stat-visitors-today" class="highlight-text">...</div>
+
+                        <div>THIS WEEK:</div>
+                        <div id="stat-visitors-week" class="highlight-text">...</div>
+
+                        <div>THIS MONTH:</div>
+                        <div id="stat-visitors-month" class="highlight-text">...</div>
+                    </div>
+                </div>
+
+                <div class="info-box" style="border-left-color: var(--warning); margin: 20px 0;">
+                    <div class="info-label" style="color: var(--warning);">SYSTEM STATE</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem;">
+                        <div>CURRENTLY IMMERSED:</div>
+                        <div id="stat-active-sessions" class="highlight-text">...</div>
+
+                        <div>CACHED AI RESPONSES:</div>
+                        <div id="stat-cached-msgs" class="highlight-text">...</div>
+                    </div>
+                </div>
+
+                <div class="info-box" style="border-left-color: var(--text-muted); margin: 20px 0;">
+                    <div class="info-label" style="color: var(--text-muted);">CONTENT DATA</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem;">
+                        <div>TOTAL STORIES:</div>
+                        <div id="stat-total-stories" class="highlight-text">...</div>
+
+                        <div>FORKS:</div>
+                        <div id="stat-forked-stories" class="highlight-text">...</div>
+                    </div>
+                </div>
+
+                <div class="button-hint" style="text-align: center; margin-top: 20px; font-size: 0.75rem;">
+                    // PRIVACY NOTICE: All data is anonymized. No IP addresses are stored.
+                </div>
             </div>
         </div>
     </div>
