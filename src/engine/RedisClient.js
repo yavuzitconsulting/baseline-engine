@@ -168,39 +168,39 @@ class RedisClient {
     }
 
     async countKeys(pattern) {
-        if (this.connected) {
-            // Optimization: Use SCAN instead of KEYS to avoid blocking
-            // However, counting ALL keys matching a pattern still requires full iteration.
-            // For 'session:*' and 'intent_cache:*' it's better than KEYS *
-            let count = 0;
-            let cursor = 0;
-            do {
-                const result = await this.client.scan(cursor, {
-                    MATCH: pattern,
-                    COUNT: 100
-                });
-                cursor = result.cursor;
-                count += result.keys.length;
-            } while (cursor !== 0);
-
-            return count;
-        }
-
-        // In-memory fallback
+    if (this.connected) {
         let count = 0;
-        const regexStr = '^' + pattern.replace(/\*/g, '.*') + '$';
-        const regex = new RegExp(regexStr);
+        let cursor = "0";
 
-        for (const key of this.memoryStore.keys()) {
-            if (regex.test(key)) count++;
-        }
+        do {
+            const result = await this.client.scan(cursor, {
+                MATCH: pattern,
+                COUNT: 100
+            });
+
+            cursor = result.cursor;     // string
+            count += result.keys.length;
+        } while (cursor !== "0");
+
         return count;
     }
 
+    // In-memory fallback
+    let count = 0;
+    const regexStr = '^' + pattern.replace(/\*/g, '.*') + '$';
+    const regex = new RegExp(regexStr);
+
+    for (const key of this.memoryStore.keys()) {
+        if (regex.test(key)) count++;
+    }
+    return count;
+}
+
+
     async expire(key, seconds) {
         if (this.connected) {
-            return await this.client.expire(key, seconds);
-        }
+        return await this.client.expire(key, String(seconds));
+    }
 
         if (this.memoryStore.has(key)) {
             if (this.expirations.has(key)) {
