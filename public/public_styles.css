@@ -1497,3 +1497,12 @@ input[type="text"] {
         font-size: 1rem;
     }
 }
+/* Latency Counter */
+.latency-counter {
+    text-align: right;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    min-height: 1.2em; /* Prevent layout jump */
+    margin-bottom: 2px;
+}

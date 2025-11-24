@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('commandInput');
     const output = document.getElementById('output');
     const statusBar = document.getElementById('statusBar');
+    const latencyCounter = document.getElementById('latencyCounter');
 
     // URL params for story ID
     const urlParams = new URLSearchParams(window.location.search);
@@ -327,7 +328,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateStatus(text) {
-        statusBar.innerText = text;
+        if (latencyCounter) {
+            latencyCounter.innerText = text;
+        }
+        if (statusBar) {
+            statusBar.innerText = text;
+        }
     }
 
     // Create Restart Button
