@@ -95,6 +95,54 @@ const gameEngine = new GameEngine(aiService, sessionManager, pluginManager);
 // Middleware
 app.use(bodyParser.json());
 
+// --- EDITOR PROXY MIDDLEWARE ---
+// Proxy specific editor API requests to the Editor Server (Port 3005)
+const proxyToEditor = async (req, res) => {
+    const targetUrl = `http://localhost:3005${req.originalUrl}`;
+    try {
+        console.log(`[Proxy] Forwarding ${req.method} ${req.originalUrl} -> ${targetUrl}`);
+
+        const options = {
+            method: req.method,
+            headers: { ...req.headers },
+            // Use the raw body if possible, but since bodyParser consumed it, we re-stringify.
+            // Note: This assumes the editor expects JSON.
+            body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body)
+        };
+
+        // Cleanup headers
+        delete options.headers['host'];
+        delete options.headers['content-length'];
+
+        const response = await fetch(targetUrl, options);
+
+        // Forward status
+        res.status(response.status);
+
+        // Forward headers
+        response.headers.forEach((val, key) => {
+             res.setHeader(key, val);
+        });
+
+        // Pipe body
+        const buffer = await response.arrayBuffer();
+        res.send(Buffer.from(buffer));
+
+    } catch (err) {
+        console.error("[Proxy] Error:", err);
+        res.status(502).json({ error: "Bad Gateway - Editor Server Unreachable" });
+    }
+};
+
+// Register Proxy Routes
+// These specific paths are handled by the Editor Server, but might reach Main Server
+// if using a shared domain/port via Nginx routing issues.
+app.use('/api/bundle', proxyToEditor);
+app.use('/api/publish', proxyToEditor);
+app.use('/api/auth', proxyToEditor);
+app.use('/api/docs', proxyToEditor);
+app.use('/api/story/*/delete', proxyToEditor);
+
 // Request Logging Middleware
 app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {

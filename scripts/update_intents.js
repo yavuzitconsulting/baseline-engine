@@ -7,7 +7,7 @@ const storiesDir = path.join(process.cwd(), 'stories');
 function createIntentDescription(intent) {
     if (intent.intent_description) return intent.intent_description;
 
-    let desc = intent.description || intent.id;
+    let desc = intent.ai_intent_helper || intent.id;
 
     // Remove common prefixes
     desc = desc.replace(/^the user wants to /i, '');
@@ -23,7 +23,7 @@ function createIntentDescription(intent) {
     }
 
     // If it was just an ID, clean it up further (underscores to spaces)
-    if (!intent.description) {
+    if (!intent.ai_intent_helper) {
         desc = desc.replace(/_/g, ' ');
          // Capitalize again after replace
         desc = desc.charAt(0).toUpperCase() + desc.slice(1);

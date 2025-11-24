@@ -50,7 +50,7 @@ class NLPProvider extends AIProvider {
         for (const intent of allIntents) {
             // We match against the description AND the ID (as a keyword)
 
-            const descriptionTokens = this.processText(intent.description);
+            const descriptionTokens = this.processText(intent.ai_intent_helper);
             const idTokens = this.processText(intent.id.replace(/_/g, ' '));
 
             // Combined tokens for the intent

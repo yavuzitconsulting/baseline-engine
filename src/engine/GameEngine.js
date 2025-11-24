@@ -12,17 +12,17 @@ class GameEngine {
         this.globalIntents = [
             {
                 id: 'global_look_around',
-                description: "The user wants to look around, inspect the surroundings, or see what is visible.",
+                ai_intent_helper: "The user wants to look around, inspect the surroundings, or see what is visible.",
                 intent_description: "Look around"
             },
             {
                 id: 'global_inventory',
-                description: "The user wants to check their inventory or see what they are carrying.",
+                ai_intent_helper: "The user wants to check their inventory or see what they are carrying.",
                 intent_description: "Check inventory"
             },
             {
                 id: 'global_status',
-                description: "The user wants to check their overall status, health, or active effects.",
+                ai_intent_helper: "The user wants to check their overall status, health, or active effects.",
                 intent_description: "Check status"
             }
         ];
@@ -300,7 +300,7 @@ class GameEngine {
             if (session.failCount >= 3) {
                 const randomIntent = storyIntents[Math.floor(Math.random() * storyIntents.length)];
                 if (randomIntent) {
-                    const desc = randomIntent.description.toLowerCase().replace(/^the user wants to /, '').replace(/^the user /, '');
+                    const desc = (randomIntent.ai_intent_helper || "").toLowerCase().replace(/^the user wants to /, '').replace(/^the user /, '');
                     responseText = `Nothing happens.\n\n[TIP: Try something like "${desc}"]`;
                 }
                 session.failCount = 0;

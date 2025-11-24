@@ -61,7 +61,7 @@ Intents define what the user can do. The AI maps user input (e.g., "turn on the 
 
 ### Fields
 *   **`id`**: Unique ID for the intent (e.g., `turn_on_light`).
-*   **`description`**: **Crucial.** The hint given to the AI to match user input. Format: "The user wants to..."
+*   **`ai_intent_helper`**: **Crucial.** The hint given to the AI to match user input. Format: "The user wants to..."
 *   **`intent_description`**: **Mandatory.** A short, human-readable label shown in the Correction UI (Challenge Button) if the AI fails. Example: "Turn on light".
 *   **`text_description`**: Used for the "Look Around" command. Describes the object in the scene.
 *   **`action`**: The system action to trigger.
@@ -88,7 +88,7 @@ To link two rooms, use the `transition` action.
 ```json
 {
   "id": "go_kitchen",
-  "description": "The user wants to go to the kitchen.",
+  "ai_intent_helper": "The user wants to go to the kitchen.",
   "intent_description": "Enter the kitchen",
   "action": "transition",
   "target": "kitchen"

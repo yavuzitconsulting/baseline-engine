@@ -202,7 +202,7 @@ app.get('/api/stories', (req, res) => {
 });
 
 // Load Bundle (Public - Fetch entire story for client-side editing)
-app.get('/api/bundle/:storyId', (req, res) => {
+app.get('/api/bundle/:storyId', async (req, res) => {
     try {
         const { storyId } = req.params;
 
@@ -220,6 +220,15 @@ app.get('/api/bundle/:storyId', (req, res) => {
         const manifestPath = path.join(storyDir, 'manifest.json');
         if (fs.existsSync(manifestPath)) {
             manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        }
+
+        // Check Lock
+        if (manifest.locked) {
+            const user = await getSession(req);
+            const username = user ? user.username : null;
+            if (manifest.authorId !== username) {
+                return res.status(403).json({ error: "This story is locked by the author and cannot be loaded." });
+            }
         }
 
         // Read Nodes
@@ -263,7 +272,11 @@ app.post('/api/publish', requireAuth, verifyEditorCsrf, async (req, res) => {
         // This allows forking or updating without manually changing the JSON first.
         manifest.authorId = username;
 
+        // 1.1 Force Date (Always update to current)
+        manifest.date = new Date().toISOString().split('T')[0];
+
         // 1.5 Validate Mandatory Fields (Manifest)
+        // 'date' is now guaranteed. 'locked' is optional.
         const MANDATORY_MANIFEST_FIELDS = ['id', 'title', 'description', 'authorId', 'authorName', 'startNode', 'language', 'date'];
         const missingManifestFields = MANDATORY_MANIFEST_FIELDS.filter(field => !manifest[field]);
         if (missingManifestFields.length > 0) {
@@ -338,6 +351,24 @@ app.post('/api/publish', requireAuth, verifyEditorCsrf, async (req, res) => {
             }
             const nodePath = path.join(nodesDir, `${node.id}.json`);
             fs.writeFileSync(nodePath, JSON.stringify(node, null, 2));
+        }
+
+        // 5. Push to Redis (Live Reload)
+        console.log(`[Publish] Syncing story '${id}' to Redis for hot reload...`);
+        try {
+             // Sync Manifest
+             await redis.setJson(`story:${id}:manifest`, manifest);
+
+             // Sync Nodes
+             for (const node of nodes) {
+                 await redis.setJson(`story:${id}:node:${node.id}`, node);
+             }
+             console.log(`[Publish] Hot reload complete for '${id}'.`);
+        } catch (redisErr) {
+             console.error("[Publish] Redis sync failed:", redisErr);
+             // We still consider the publish "successful" because files are written,
+             // but live reload failed. Maybe warn user?
+             // For now, let's just log it.
         }
 
         res.json({ success: true, message: "Story published successfully." });

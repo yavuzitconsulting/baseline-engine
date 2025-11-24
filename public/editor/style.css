@@ -7,6 +7,9 @@
     --success: #238636;
     --danger: #da3633;
     --font-mono: 'Share Tech Mono', monospace;
+    --tutorial-bg: #000;
+    --tutorial-text: #0f0;
+    --tutorial-border: #0f0;
 }
 
 * { box-sizing: border-box; }
@@ -51,18 +54,19 @@ body {
     color: var(--text-main);
     font-size: 0.9rem;
     padding: 0.4rem 0.8rem;
+    cursor: pointer;
 }
 .nav-btn:hover { border-color: var(--border); background: var(--bg-panel); }
 
 #app-container {
     flex: 1;
-    display: flex;
+    display: grid;
+    grid-template-columns: 280px 1fr 320px; /* 3-column layout */
     overflow: hidden;
 }
 
-/* Sidebar */
+/* Left Sidebar: Node List */
 #sidebar {
-    width: 280px;
     background: var(--bg-panel);
     border-right: 1px solid var(--border);
     display: flex;
@@ -89,18 +93,22 @@ body {
     border-bottom: 1px solid #21262d;
     cursor: pointer;
     font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
 }
 
 .node-item:hover { background: #21262d; }
 .node-item.active { background: var(--accent); color: #000; }
 .node-item.intro-node { border-left: 3px solid var(--success); }
+.node-item .status-indicator { font-size: 0.8rem; opacity: 0.7; }
 
-/* Main Editor */
+/* Center: Main Editor */
 main {
-    flex: 1;
     display: flex;
     flex-direction: column;
     background: #0d1117;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
 }
 
 .hidden { display: none !important; }
@@ -171,6 +179,95 @@ input, textarea, select {
 }
 select:focus, input:focus, textarea:focus { border-color: var(--accent); outline: none; }
 
+/* Code View */
+#code-view-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background: #0d1117;
+}
+
+#code-editor {
+    flex: 1;
+    width: 100%;
+    background: #0d1117;
+    color: #f0f6fc;
+    font-family: 'Consolas', 'Monaco', monospace;
+    border: 1px solid var(--border);
+    padding: 1rem;
+    resize: none;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Right Sidebar: Context (Minimap & Tutorial) */
+#context-panel {
+    background: var(--bg-panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.context-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.context-header {
+    padding: 0.5rem;
+    background: #010409;
+    font-weight: bold;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#minimap-container {
+    flex: 1;
+    background: #0d1117;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#tutorial-container {
+    flex: 1;
+    background: var(--tutorial-bg);
+    color: var(--tutorial-text);
+    font-family: 'Courier New', Courier, monospace;
+    padding: 1rem;
+    overflow-y: auto;
+    border-top: 2px solid var(--tutorial-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.tutorial-text {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+}
+
+.tutorial-action {
+    margin-top: auto;
+    text-align: center;
+}
+
+.highlight-tutorial {
+    border: 2px solid #0f0 !important;
+    box-shadow: 0 0 10px #0f0;
+    position: relative;
+    z-index: 10;
+}
+
 /* Intents */
 .intent-card {
     background: #0d1117;
@@ -210,6 +307,80 @@ select:focus, input:focus, textarea:focus { border-color: var(--accent); outline
     color: #484f58;
 }
 
-.btn-primary { background: var(--accent); color: #000; border: none; }
-.btn-danger { border-color: var(--danger); color: var(--danger); background: transparent; cursor: pointer; }
-.btn-secondary { cursor: pointer; }
+.btn-primary { background: var(--accent); color: #000; border: none; padding: 0.5rem 1rem; cursor: pointer; }
+.btn-danger { border-color: var(--danger); color: var(--danger); background: transparent; cursor: pointer; padding: 0.3rem 0.6rem; border: 1px solid var(--danger); }
+.btn-secondary { cursor: pointer; padding: 0.5rem 1rem; border: 1px solid var(--border); background: transparent; color: var(--text-main); }
+.btn-small { padding: 0.2rem 0.5rem; font-size: 0.8rem; }
+
+/* Minimap Nodes (SVG styling) */
+.mm-node { fill: var(--bg-panel); cursor: pointer; }
+.mm-node:hover { fill: var(--accent); }
+.mm-node.current { fill: var(--accent); stroke: #fff; }
+.mm-node.intro { stroke: var(--success); }
+.mm-link { stroke: #555; stroke-width: 1px; }
+.mm-text { font-size: 10px; fill: #fff; text-anchor: middle; pointer-events: none; }
+
+/* Tooltips */
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+    margin-left: 0.5rem;
+    cursor: help;
+}
+
+.tooltip-icon {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    color: var(--bg-dark);
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: var(--bg-panel);
+    color: var(--text-main);
+    text-align: left;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 0.5rem;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%; /* Position above */
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Arrow for Tooltip */
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--accent) transparent transparent transparent;
+}
+
+/* Required Field Marker */
+.required-marker {
+    color: var(--danger);
+    margin-left: 0.2rem;
+    font-weight: bold;
+}

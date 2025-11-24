@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Baseline Editor</title>
+    <title>Baseline Engine - Editor</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -13,9 +13,10 @@
             <span class="brand">BASELINE EDITOR</span>
             <button id="nav-new" class="nav-btn">New</button>
             <button id="nav-load" class="nav-btn">Load</button>
-            <button id="nav-manifest" class="nav-btn">Settings</button>
+            <button id="nav-manifest" class="nav-btn">Story Properties</button>
             <button id="nav-import" class="nav-btn">Import</button>
             <button id="nav-export" class="nav-btn">Export</button>
+            <button id="nav-tutorial" class="nav-btn" style="color: #0f0;">Tutorial</button>
         </div>
         <div class="nav-group">
             <button id="nav-docs" class="nav-btn">Docs</button>
@@ -27,7 +28,7 @@
     <input type="file" id="file-import" style="display:none" accept=".json">
 
     <div id="app-container">
-        <!-- Sidebar -->
+        <!-- Sidebar (Left) -->
         <aside id="sidebar">
             <div class="sidebar-controls">
                 <button id="new-node-btn" class="btn-primary">+ NEW NODE</button>
@@ -35,52 +36,88 @@
             <div id="node-list"></div>
         </aside>
 
-        <!-- Main Editor -->
-        <main id="editor-area" class="hidden">
-            <header class="editor-header">
-                <div class="id-group">
-                    <label>NODE ID:</label>
-                    <input type="text" id="node-id" placeholder="unique_node_id">
-                </div>
-                <div class="actions">
-                    <button id="save-btn" class="btn-primary">SAVE NODE (LOCAL)</button>
-                    <span id="status-msg" style="margin-left: 1rem; color: var(--success);"></span>
-                </div>
-            </header>
+        <!-- Main Editor (Center) -->
+        <main id="editor-main">
+            <div id="editor-area" class="hidden" style="display:flex; flex-direction:column; height:100%;">
+                <header class="editor-header">
+                    <div class="id-group">
+                        <label>NODE ID:</label>
+                        <input type="text" id="node-id" placeholder="unique_node_id">
+                    </div>
+                    <div class="actions" style="display:flex; gap: 1rem; align-items: center;">
+                        <button id="toggle-view-btn" class="btn-secondary">View: Form</button>
+                        <button id="save-btn" class="btn-primary">SAVE NODE (LOCAL)</button>
+                        <span id="status-msg" style="margin-left: 1rem; color: var(--success);"></span>
+                    </div>
+                </header>
 
-            <div class="scroll-container">
-                <section class="card">
-                    <h2>DESCRIPTIONS</h2>
-                    <div class="form-group">
-                        <label>Primary Text</label>
-                        <textarea id="node-text" rows="4"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Revisit Text</label>
-                        <textarea id="node-text-revisit" rows="2"></textarea>
-                    </div>
-                    <div class="sub-section">
-                        <div class="header-row">
-                            <label>Conditionals</label>
-                            <button id="add-conditional-btn" class="btn-small">+ Add</button>
+                <!-- Form View -->
+                <div id="form-view-container" class="scroll-container">
+                    <section class="card">
+                        <h2>DESCRIPTIONS</h2>
+                        <div class="form-group">
+                            <label>Primary Text</label>
+                            <textarea id="node-text" rows="4"></textarea>
                         </div>
-                        <div id="conditionals-list"></div>
-                    </div>
-                </section>
+                        <div class="form-group">
+                            <label>Revisit Text</label>
+                            <textarea id="node-text-revisit" rows="2"></textarea>
+                        </div>
+                        <div class="sub-section">
+                            <div class="header-row">
+                                <label>Conditionals</label>
+                                <button id="add-conditional-btn" class="btn-small">+ Add</button>
+                            </div>
+                            <div id="conditionals-list"></div>
+                        </div>
+                    </section>
 
-                <section class="card">
-                    <div class="header-row">
-                        <h2>INTENTS</h2>
-                        <button id="add-intent-btn" class="btn-primary">+ ADD INTENT</button>
-                    </div>
-                    <div id="intents-list"></div>
-                </section>
+                    <section class="card">
+                        <div class="header-row">
+                            <h2>INTENTS</h2>
+                            <div style="display:flex; gap: 1rem;">
+                                <button id="link-node-btn" class="btn-secondary">+ LINK NODE</button>
+                                <button id="add-intent-btn" class="btn-primary">+ ADD INTENT</button>
+                            </div>
+                        </div>
+                        <div id="intents-list"></div>
+                    </section>
+                </div>
+
+                <!-- Code View -->
+                <div id="code-view-container" class="hidden">
+                    <textarea id="code-editor" spellcheck="false"></textarea>
+                </div>
+            </div>
+
+            <div id="empty-state">
+                <p>CREATE OR SELECT A NODE TO EDIT</p>
             </div>
         </main>
 
-        <div id="empty-state">
-            <p>CREATE OR SELECT A NODE TO EDIT</p>
-        </div>
+        <!-- Context Panel (Right) -->
+        <aside id="context-panel">
+            <div class="context-section" style="height: 50%;">
+                <div class="context-header">
+                    <span>NODE MAP</span>
+                </div>
+                <div id="minimap-container">
+                    <!-- SVG Map will be rendered here -->
+                </div>
+            </div>
+            <div class="context-section" style="height: 50%;">
+                <div class="context-header">
+                    <span>TUTORIAL / LOG</span>
+                    <button class="btn-small btn-secondary" onclick="toggleTutorial()">Toggle</button>
+                </div>
+                <div id="tutorial-container">
+                    <div id="tutorial-content">
+                        <div class="tutorial-text">SYSTEM INITIALIZED...<br>AWAITING INPUT.</div>
+                    </div>
+                    <div class="tutorial-action" id="tutorial-action"></div>
+                </div>
+            </div>
+        </aside>
     </div>
 
     <!-- Modals -->
@@ -120,31 +157,81 @@
     <!-- Manifest Modal -->
     <div id="modal-manifest" class="modal-overlay hidden">
         <div class="modal">
-            <h2>Story Settings</h2>
+            <h2>Story Properties</h2>
             <div class="form-group">
-                <label>ID (Folder Name)</label>
+                <label>
+                    ID (Folder Name) <span class="required-marker">*</span>
+                    <div class="tooltip-container">
+                        <span class="tooltip-icon">i</span>
+                        <span class="tooltip-text">Unique identifier for the story. Used as the folder name on the server. No spaces or special characters.</span>
+                    </div>
+                </label>
                 <input type="text" id="m-id">
             </div>
             <div class="form-group">
-                <label>Title</label>
+                <label>
+                    Title <span class="required-marker">*</span>
+                    <div class="tooltip-container">
+                        <span class="tooltip-icon">i</span>
+                        <span class="tooltip-text">The display name of the story shown in the main menu.</span>
+                    </div>
+                </label>
                 <input type="text" id="m-title">
             </div>
             <div class="form-group">
-                <label>Description</label>
+                <label>
+                    Description <span class="required-marker">*</span>
+                    <div class="tooltip-container">
+                        <span class="tooltip-icon">i</span>
+                        <span class="tooltip-text">A brief summary of the story's plot or setting. Shown in the story selector.</span>
+                    </div>
+                </label>
                 <textarea id="m-desc" rows="3"></textarea>
             </div>
             <div class="form-group">
-                <label>Author ID (Read Only)</label>
+                <label>
+                    Author ID (Read Only)
+                    <div class="tooltip-container">
+                        <span class="tooltip-icon">i</span>
+                        <span class="tooltip-text">The username of the creator. Automatically set upon publishing.</span>
+                    </div>
+                </label>
                 <input type="text" id="m-auth" disabled>
             </div>
             <div class="form-group">
-                <label>Language</label>
+                <label>
+                    Language <span class="required-marker">*</span>
+                    <div class="tooltip-container">
+                        <span class="tooltip-icon">i</span>
+                        <span class="tooltip-text">The primary language of the story content. Affects text-to-speech and AI processing.</span>
+                    </div>
+                </label>
                 <select id="m-lang"></select>
             </div>
-            <div class="form-group">
-                <label>Date (American Format Default)</label>
-                <input type="date" id="m-date">
+            <div class="form-group" style="display: none;">
+                <label>Date (Auto)</label>
+                <input type="date" id="m-date" disabled>
             </div>
+
+            <div class="form-group" style="display:flex; justify-content: space-between; align-items: center; border: 1px solid #333; padding: 10px;">
+                <label style="margin:0;">
+                    Lock Story
+                    <div class="tooltip-container">
+                        <span class="tooltip-icon">i</span>
+                        <span class="tooltip-text">If locked, other users cannot load this story into the editor to fork it. You can always edit your own locked stories.</span>
+                    </div>
+                </label>
+                <div id="lock-toggle" class="lock-toggle" onclick="toggleLockState()" style="cursor: pointer; font-size: 1.5rem;">
+                    🔓 <span style="font-size: 0.8rem;">OPEN</span>
+                </div>
+                <input type="checkbox" id="m-locked" style="display:none">
+            </div>
+
+            <div id="fork-info-group" class="form-group hidden" style="border: 1px dashed var(--accent); padding: 10px;">
+                <label style="color: var(--accent);">FORKED FROM:</label>
+                <div id="fork-source-display" style="font-family: monospace;"></div>
+            </div>
+
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeModal('modal-manifest')">Cancel</button>
                 <button class="btn-primary" onclick="saveManifest()">Save Settings</button>

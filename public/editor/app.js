@@ -5,6 +5,8 @@
 // --- Global State ---
 const AppState = {
     currentStory: null,
+    currentNodeId: null,
+    viewMode: 'form', // 'form' or 'code'
     storyData: {
         id: null,
         manifest: {
@@ -20,17 +22,22 @@ const AppState = {
         nodes: []
     },
     user: null, // { username, token }
-    csrfToken: null, // Security Token
+    csrfToken: null,
     unsavedChanges: false
 };
 
 // --- DOM Elements ---
 const els = {
-    storySelector: document.getElementById('story-selector'),
     nodeList: document.getElementById('node-list'),
     editorArea: document.getElementById('editor-area'),
     emptyState: document.getElementById('empty-state'),
     statusMsg: document.getElementById('status-msg'),
+
+    // Editor Views
+    formView: document.getElementById('form-view-container'),
+    codeView: document.getElementById('code-view-container'),
+    codeEditor: document.getElementById('code-editor'),
+    toggleViewBtn: document.getElementById('toggle-view-btn'),
 
     // Editor Inputs
     nodeId: document.getElementById('node-id'),
@@ -45,7 +52,7 @@ const els = {
     addConditionalBtn: document.getElementById('add-conditional-btn'),
     addIntentBtn: document.getElementById('add-intent-btn'),
 
-    // Navbar Actions (To be bound)
+    // Navbar Actions
     btnLogin: document.getElementById('nav-login'),
     btnNew: document.getElementById('nav-new'),
     btnLoad: document.getElementById('nav-load'),
@@ -54,6 +61,12 @@ const els = {
     btnPublish: document.getElementById('nav-publish'),
     btnDocs: document.getElementById('nav-docs'),
     btnManifest: document.getElementById('nav-manifest'),
+    btnTutorial: document.getElementById('nav-tutorial'),
+
+    // Context Panel
+    minimap: document.getElementById('minimap-container'),
+    tutorialContent: document.getElementById('tutorial-content'),
+    tutorialAction: document.getElementById('tutorial-action'),
 
     // Modals
     modalLogin: document.getElementById('modal-login'),
@@ -81,11 +94,12 @@ const SUPPORTED_LANGUAGES = [
 
 function init() {
     checkUser();
-    initSecurity(); // Fetch CSRF
+    initSecurity();
     loadFromLocal();
     bindEvents();
     updateUI();
     populateLanguageDropdown();
+    initTutorial();
 }
 
 async function initSecurity() {
@@ -97,17 +111,8 @@ async function initSecurity() {
 
         const res = await fetch('/api/auth/csrf', { headers });
         const data = await res.json();
-        // If logged in, we might get one token, if anonymous another.
-        // The server returns { csrfToken } or { anonToken, csrfToken }
-        if (data.csrfToken) {
-            AppState.csrfToken = data.csrfToken;
-        }
-        if (data.anonToken) {
-            // Save anon token to localStorage if needed?
-            // Actually server expects x-anon-token header if session not found.
-            // But we can just store it in memory or session storage.
-            sessionStorage.setItem('editor_anon_token', data.anonToken);
-        }
+        if (data.csrfToken) AppState.csrfToken = data.csrfToken;
+        if (data.anonToken) sessionStorage.setItem('editor_anon_token', data.anonToken);
     } catch (e) {
         console.error("Failed to init security", e);
     }
@@ -133,9 +138,8 @@ function checkUser() {
 }
 
 function bindEvents() {
-    // Nav Actions
     els.btnNew.onclick = newStory;
-    els.btnLoad.onclick = () => openModal('modal-load'); // Wait, we need to fetch list first
+    els.btnLoad.onclick = () => openModal('modal-load');
     els.btnExport.onclick = exportBundle;
     els.btnImport.onclick = () => document.getElementById('file-import').click();
     els.btnPublish.onclick = publishStory;
@@ -147,45 +151,113 @@ function bindEvents() {
         populateManifestModal();
         openModal('modal-manifest');
     };
+
+    const lockToggle = document.getElementById('lock-toggle');
+    if (lockToggle) {
+        lockToggle.onclick = toggleLockState;
+    }
     els.btnDocs.onclick = async () => {
         await loadDocs();
         openModal('modal-docs');
     };
+    els.btnTutorial.onclick = () => {
+        startTutorialFlow();
+    };
 
-    // Editor Actions
     els.saveNodeBtn.onclick = saveCurrentNode;
     els.newNodeBtn.onclick = createNewNode;
     els.addConditionalBtn.onclick = () => addConditionalUI();
     els.addIntentBtn.onclick = () => addIntentUI();
 
-    // Inputs
+    // Link Node Button
+    const linkBtn = document.getElementById('link-node-btn');
+    if (linkBtn) {
+        linkBtn.onclick = () => {
+            const target = prompt("Enter ID of target node to link to:");
+            if (target) {
+                addIntentUI({
+                    id: 'go_' + target,
+                    action: 'transition',
+                    target: target,
+                    ai_intent_helper: 'User wants to go to ' + target,
+                    intent_description: 'Go to ' + target
+                });
+            }
+        };
+    }
+
+    els.toggleViewBtn.onclick = toggleViewMode;
+
     document.getElementById('file-import').onchange = importBundle;
 }
 
 function updateUI() {
-    // Navbar User State
     if (AppState.user) {
         els.btnLogin.textContent = `LOGOUT (${AppState.user.username})`;
     } else {
         els.btnLogin.textContent = 'LOGIN';
     }
-
-    // Sidebar List
     renderNodeList();
-
-    // Story Info
     const title = AppState.storyData.manifest.title || 'UNTITLED PROTOCOL';
     document.querySelector('.brand').textContent = title.toUpperCase().substring(0, 20);
+
+    if (AppState.currentNodeId) renderMiniMap(AppState.currentNodeId);
+}
+
+// --- View Mode Toggle (Form vs Code) ---
+function toggleViewMode() {
+    if (AppState.viewMode === 'form') {
+        // Switch to Code
+        // 1. Gather data from form
+        const currentData = gatherNodeDataFromForm();
+        if (!currentData) return; // Validation fail
+
+        // 2. Set Code View
+        els.codeEditor.value = JSON.stringify(currentData, null, 4);
+        els.formView.classList.add('hidden');
+        els.codeView.classList.remove('hidden');
+        els.toggleViewBtn.textContent = "View: JSON";
+        AppState.viewMode = 'code';
+    } else {
+        // Switch to Form
+        // 1. Parse JSON
+        try {
+            const json = JSON.parse(els.codeEditor.value);
+            if (!json.id) throw new Error("Node ID is required");
+
+            // 2. Populate Form
+            populateForm(json);
+            els.codeView.classList.add('hidden');
+            els.formView.classList.remove('hidden');
+            els.toggleViewBtn.textContent = "View: Form";
+            AppState.viewMode = 'form';
+        } catch (e) {
+            alert("Invalid JSON: " + e.message);
+        }
+    }
+}
+
+function gatherNodeDataFromForm() {
+    const id = els.nodeId.value.trim();
+    if (!id) { alert("ID required"); return null; }
+
+    return {
+        id: id,
+        text: els.nodeText.value,
+        text_revisit: els.nodeRevisit.value || undefined,
+        text_conditionals: gatherConditionals(),
+        intents: gatherIntents()
+    };
 }
 
 // --- Local Storage Management ---
-
 function saveToLocal() {
     if (!AppState.storyData.id) return;
     localStorage.setItem(`editor_autosave_${AppState.storyData.id}`, JSON.stringify(AppState.storyData));
     localStorage.setItem('editor_last_story', AppState.storyData.id);
     AppState.unsavedChanges = true;
     updateUI();
+    checkTutorialState();
 }
 
 function loadFromLocal() {
@@ -195,17 +267,19 @@ function loadFromLocal() {
         if (data) {
             AppState.storyData = JSON.parse(data);
             AppState.currentStory = lastId;
-            console.log("Restored local session:", lastId);
         }
     }
 }
 
 // --- Story Actions ---
+function newStory(e, forceId = null) {
+    if (!forceId && !confirm("Create new story? Unsaved changes will be lost.")) return;
 
-function newStory() {
-    if (!confirm("Create new story? Unsaved changes to current story will be kept in local storage, but verify you have exported if needed.")) return;
+    let id = forceId;
+    if (!id) {
+         id = prompt("Enter unique ID for new story (folder name):");
+    }
 
-    const id = prompt("Enter unique ID for new story (folder name):");
     if (!id) return;
 
     AppState.storyData = {
@@ -223,42 +297,74 @@ function newStory() {
         nodes: []
     };
     AppState.currentStory = id;
+    AppState.currentNodeId = null;
     saveToLocal();
     updateUI();
     els.editorArea.classList.add('hidden');
     els.emptyState.classList.remove('hidden');
+    checkTutorialState();
 }
 
 async function loadFromServer(storyId) {
     closeModal('modal-load');
     if (AppState.storyData.id && !confirm(`Overwrite current local workspace with server version of ${storyId}?`)) return;
-
     els.statusMsg.textContent = "Fetching bundle...";
     try {
         const res = await fetch(`/api/bundle/${storyId}`);
-        if (!res.ok) throw new Error("Failed to load bundle");
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Failed to load bundle");
+        }
         const bundle = await res.json();
+
+        // CHECK FORKING
+        const currentUser = AppState.user ? AppState.user.username : null;
+        const authorId = bundle.manifest.authorId;
+
+        let isFork = false;
+
+        if (currentUser && authorId && currentUser !== authorId) {
+            // FORKING DETECTED
+            isFork = true;
+            alert("You are loading a story created by another user.\nYou must provide a new Title and ID to save your version.");
+
+            // Set Fork Metadata
+            bundle.manifest.originalStoryId = bundle.id;
+            bundle.manifest.originalStoryTitle = bundle.manifest.title;
+            bundle.manifest.isFork = true;
+
+            // Clear Identity
+            bundle.id = '';
+            bundle.manifest.id = '';
+            bundle.manifest.title = `Fork of ${bundle.manifest.title}`;
+            bundle.manifest.authorId = currentUser; // Claim ownership of fork
+            bundle.manifest.locked = false; // Reset lock on fork
+        }
 
         AppState.storyData = bundle;
         AppState.currentStory = bundle.id;
+        AppState.currentNodeId = null;
         saveToLocal();
         updateUI();
         els.statusMsg.textContent = "Loaded!";
+
+        if (isFork) {
+            populateManifestModal();
+            openModal('modal-manifest');
+        }
+
+        checkTutorialState();
     } catch (e) {
         alert(e.message);
     }
 }
 
-// --- Export / Import ---
-
 function exportBundle() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(AppState.storyData, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `${AppState.storyData.id}_bundle.json`);
-    document.body.appendChild(downloadAnchorNode); // required for firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+    const link = document.createElement('a');
+    link.href = dataStr;
+    link.download = `${AppState.storyData.id}_bundle.json`;
+    link.click();
 }
 
 function importBundle(event) {
@@ -267,22 +373,20 @@ function importBundle(event) {
         try {
             const json = JSON.parse(e.target.result);
             if (!json.manifest || !json.nodes) throw new Error("Invalid Bundle Format");
-
-            if (!confirm(`Import story "${json.manifest.title}"? This will overwrite current workspace.`)) return;
-
+            if (!confirm(`Import story "${json.manifest.title}"?`)) return;
             AppState.storyData = json;
             AppState.currentStory = json.id;
+            AppState.currentNodeId = null;
             saveToLocal();
             updateUI();
+            checkTutorialState();
         } catch (ex) {
             alert("Error importing: " + ex.message);
         }
     };
     reader.readAsText(event.target.files[0]);
-    event.target.value = ''; // Reset
+    event.target.value = '';
 }
-
-// --- Publish ---
 
 async function publishStory() {
     if (!AppState.user) {
@@ -291,8 +395,23 @@ async function publishStory() {
         return;
     }
 
-    if (!confirm("Publish this version to the server? This makes it live.")) return;
+    // Client-side Validation of Manifest
+    const m = AppState.storyData.manifest;
+    const missing = [];
+    if (!m.id) missing.push('ID');
+    if (!m.title) missing.push('Title');
+    if (!m.description) missing.push('Description');
+    if (!m.language) missing.push('Language');
+    if (!m.date) missing.push('Date');
 
+    if (missing.length > 0) {
+        alert(`Cannot publish. Missing required story properties: ${missing.join(', ')}. Please fill them in.`);
+        populateManifestModal();
+        openModal('modal-manifest');
+        return;
+    }
+
+    if (!confirm("Publish this version to the server? This makes it live.")) return;
     try {
         els.statusMsg.textContent = "Publishing...";
         const headers = {
@@ -306,7 +425,6 @@ async function publishStory() {
             headers: headers,
             body: JSON.stringify(AppState.storyData)
         });
-
         const result = await res.json();
         if (res.ok) {
             alert("Published successfully!");
@@ -321,24 +439,35 @@ async function publishStory() {
 }
 
 // --- Editor Logic ---
-
 function renderNodeList() {
     els.nodeList.innerHTML = '';
     if (!AppState.storyData.nodes) AppState.storyData.nodes = [];
-
-    // Sort
     const nodes = [...AppState.storyData.nodes].sort((a, b) => {
         if (a.id === 'intro') return -1;
         if (b.id === 'intro') return 1;
         return a.id.localeCompare(b.id);
     });
-
     nodes.forEach(node => {
         const div = document.createElement('div');
         div.className = `node-item ${node.id === 'intro' ? 'intro-node' : ''}`;
-        div.textContent = node.id;
+        if (node.id === AppState.currentNodeId) div.classList.add('active');
+
+        // Check orphan
+        const isOrphan = node.id !== 'intro' && !hasIncomingConnections(node.id);
+
+        div.innerHTML = `
+            <span>${node.id}</span>
+            ${isOrphan ? '<span class="status-indicator" title="Orphan Node (No incoming links)">⚠️</span>' : ''}
+        `;
         div.onclick = () => loadNodeIntoEditor(node.id);
         els.nodeList.appendChild(div);
+    });
+}
+
+function hasIncomingConnections(targetId) {
+    return AppState.storyData.nodes.some(n => {
+        if (!n.intents) return false;
+        return n.intents.some(i => (i.action === 'transition' && i.target === targetId));
     });
 }
 
@@ -346,49 +475,68 @@ function loadNodeIntoEditor(nodeId) {
     const node = AppState.storyData.nodes.find(n => n.id === nodeId);
     if (!node) return;
 
+    AppState.currentNodeId = nodeId;
     els.emptyState.classList.add('hidden');
     els.editorArea.classList.remove('hidden');
 
-    // Populate Fields
+    // Reset View to Form (or keep preference? Resetting is safer)
+    AppState.viewMode = 'form';
+    els.codeView.classList.add('hidden');
+    els.formView.classList.remove('hidden');
+    els.toggleViewBtn.textContent = "View: Form";
+
+    populateForm(node);
+    renderMiniMap(nodeId);
+    renderNodeList(); // Update active state
+}
+
+function populateForm(node) {
     els.nodeId.value = node.id;
     els.nodeId.disabled = (node.id === 'intro');
     els.nodeText.value = node.text || '';
     els.nodeRevisit.value = node.text_revisit || '';
-
     renderConditionals(node.text_conditionals || []);
     renderIntents(node.intents || []);
 }
 
 function saveCurrentNode() {
-    const id = els.nodeId.value.trim();
-    if (!id) return alert("ID required");
-
-    const newNode = {
-        id: id,
-        text: els.nodeText.value,
-        text_revisit: els.nodeRevisit.value || undefined,
-        text_conditionals: gatherConditionals(),
-        intents: gatherIntents()
-    };
-
-    // Update Store
-    const idx = AppState.storyData.nodes.findIndex(n => n.id === id);
-    if (idx >= 0) {
-        AppState.storyData.nodes[idx] = newNode;
+    // If in code view, parse that first
+    let newNodeData;
+    if (AppState.viewMode === 'code') {
+        try {
+            newNodeData = JSON.parse(els.codeEditor.value);
+            if (!newNodeData.id) throw new Error("ID missing");
+        } catch (e) {
+            return alert("Fix JSON before saving.");
+        }
     } else {
-        AppState.storyData.nodes.push(newNode);
+        newNodeData = gatherNodeDataFromForm();
     }
+
+    if (!newNodeData) return;
+
+    const idx = AppState.storyData.nodes.findIndex(n => n.id === newNodeData.id);
+    if (idx >= 0) {
+        AppState.storyData.nodes[idx] = newNodeData;
+    } else {
+        AppState.storyData.nodes.push(newNodeData);
+    }
+
+    // If ID changed (renamed), we need to handle that?
+    // Current UI makes ID editable only for new nodes or non-intro.
+    // But if we change ID, we should update old one.
+    // Simplified: Overwrite by ID. If user changed ID in form, it saves as NEW node technically if we don't track original.
+    // But nodeId input is the key.
 
     saveToLocal();
     renderNodeList();
-    els.statusMsg.textContent = "Locally Saved";
+    renderMiniMap(newNodeData.id);
+    els.statusMsg.textContent = "Saved";
     setTimeout(() => els.statusMsg.textContent = "", 2000);
 }
 
 function createNewNode() {
     if (!AppState.currentStory) return alert("Create a story first.");
-
-    // Enforce Intro
     const hasIntro = AppState.storyData.nodes.find(n => n.id === 'intro');
     let newId = '';
     if (!hasIntro) {
@@ -398,8 +546,6 @@ function createNewNode() {
         newId = prompt("Node ID:");
     }
     if (!newId) return;
-
-    // Check duplicate
     if (AppState.storyData.nodes.find(n => n.id === newId)) return alert("ID exists");
 
     const newNode = { id: newId, text: "", intents: [] };
@@ -407,10 +553,285 @@ function createNewNode() {
     saveToLocal();
     renderNodeList();
     loadNodeIntoEditor(newId);
+    checkTutorialState();
 }
 
-// --- Conditionals & Intents Helpers (Similar to before) ---
+// --- MiniMap Logic ---
+function renderMiniMap(centerNodeId) {
+    const container = els.minimap;
+    container.innerHTML = '';
 
+    const node = AppState.storyData.nodes.find(n => n.id === centerNodeId);
+    if (!node) return;
+
+    // Find Neighbors
+    // Outgoing
+    const outgoing = (node.intents || [])
+        .filter(i => i.action === 'transition' && i.target)
+        .map(i => i.target);
+
+    // Incoming
+    const incoming = AppState.storyData.nodes
+        .filter(n => n.intents && n.intents.some(i => i.action === 'transition' && i.target === centerNodeId))
+        .map(n => n.id);
+
+    // Simple SVG Visualization
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const cx = width / 2;
+    const cy = height / 2;
+    const r = 30;
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+
+    // Helper to draw line
+    const drawLink = (x1, y1, x2, y2, color) => {
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+        line.setAttribute("stroke", color);
+        line.setAttribute("stroke-width", "2");
+        line.setAttribute("marker-end", "url(#arrow)");
+        svg.appendChild(line);
+    };
+
+    // Define Arrow Marker
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    defs.innerHTML = `<marker id="arrow" markerWidth="10" markerHeight="10" refX="20" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#555" /></marker>`;
+    svg.appendChild(defs);
+
+    // Draw Center
+    const drawNode = (id, x, y, type) => {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("class", `mm-node ${type}`);
+        g.onclick = () => loadNodeIntoEditor(id);
+
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", x);
+        circle.setAttribute("cy", y);
+        circle.setAttribute("r", r);
+
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", x);
+        text.setAttribute("y", y + 4);
+        text.setAttribute("class", "mm-text");
+        text.textContent = id.substring(0, 6);
+
+        g.appendChild(circle);
+        g.appendChild(text);
+        svg.appendChild(g);
+    };
+
+    // Outgoing (Right side)
+    const uniqueOut = [...new Set(outgoing)];
+    uniqueOut.forEach((id, i) => {
+        const angle = (i / uniqueOut.length) * Math.PI - (Math.PI / 2); // Spread arc
+        const ox = cx + 100;
+        const oy = cy + (i - (uniqueOut.length-1)/2) * 70;
+        drawLink(cx + r, cy, ox - r, oy, "#58a6ff");
+        drawNode(id, ox, oy, 'outgoing');
+    });
+
+    // Incoming (Left side)
+    const uniqueIn = [...new Set(incoming)];
+    uniqueIn.forEach((id, i) => {
+        const ix = cx - 100;
+        const iy = cy + (i - (uniqueIn.length-1)/2) * 70;
+        drawLink(ix + r, iy, cx - r, cy, "#555");
+        drawNode(id, ix, iy, 'incoming');
+    });
+
+    // Draw Center Last (on top)
+    drawNode(centerNodeId, cx, cy, 'current');
+
+    container.appendChild(svg);
+}
+
+// --- Tutorial Logic ---
+const Tutorial = {
+    step: 0,
+    active: false,
+    steps: [
+        {
+            id: 'start',
+            text: "WELCOME TO ECHO PROTOCOL EDITOR.\n\nTHIS GUIDE WILL WALK YOU THROUGH CREATING A COMPLEX NARRATIVE.\n\nSTEP 1: CREATE A FRESH PROJECT.\nCLICK THE [NEW] BUTTON IN THE TOP BAR AND NAME YOUR STORY 'tutorial_story'.\n\nCLICK [NEXT STEP] WHEN DONE.",
+            validate: () => AppState.storyData.id !== null,
+            highlight: 'nav-new'
+        },
+        {
+            id: 'properties',
+            text: "DEFINE YOUR STORY.\n\nSTEP 2: STORY PROPERTIES.\n1. CLICK [STORY PROPERTIES] IN TOP MENU.\n2. FILL IN THE TITLE AND DESCRIPTION.\n3. CLICK [SAVE SETTINGS].\n\nTHIS INFORMATION IS REQUIRED TO PUBLISH.",
+            validate: () => {
+                const m = AppState.storyData.manifest;
+                return m.title && m.description && m.description.length > 5;
+            },
+            highlight: 'nav-manifest'
+        },
+        {
+            id: 'intro_create',
+            text: "EVERY STORY NEEDS AN ENTRY POINT.\n\nSTEP 3: CREATE THE 'intro' NODE.\nCLICK [NEW NODE] IN THE LEFT SIDEBAR.\nIF PROMPTED FOR ID, ENTER 'intro'.\n\nCLICK [NEXT STEP] AFTER CREATING IT.",
+            validate: () => AppState.storyData.nodes.find(n => n.id === 'intro'),
+            highlight: 'new-node-btn'
+        },
+        {
+            id: 'intro_desc',
+            text: "THE 'intro' NODE IS YOUR STARTING ROOM.\n\nSTEP 4: ADD A DESCRIPTION.\nENTER 'You are in a cold, dark room. A terminal blinks nearby.' INTO THE DESCRIPTION FIELD.\n\nCLICK [SAVE NODE].\nTHEN CLICK [NEXT STEP].",
+            validate: () => {
+                const n = AppState.storyData.nodes.find(n => n.id === 'intro');
+                if (AppState.currentNodeId === 'intro') {
+                     return els.nodeText.value.length > 10;
+                }
+                return n && n.text && n.text.length > 10;
+            },
+            highlight: 'node-text'
+        },
+        {
+            id: 'intent_inspect',
+            text: "PLAYERS INTERACT VIA INTENTS.\n\nSTEP 5: ADD AN INSPECT INTENT.\n1. CLICK [ADD INTENT].\n2. ID: 'inspect_term'\n3. ACTION: 'Text Response'\n4. AI INTENT HELPER: 'User wants to inspect terminal'\n5. LOOK AROUND TEXT: 'A terminal is mounted on the wall.'\n6. TARGET: 'It runs Echo OS v1.0.'\n\nCLICK [SAVE NODE] & [NEXT STEP].",
+            validate: () => {
+                if (AppState.currentNodeId === 'intro') {
+                    const cards = document.querySelectorAll('.intent-card');
+                    return cards.length > 0;
+                }
+                const n = AppState.storyData.nodes.find(n => n.id === 'intro');
+                return n && n.intents && n.intents.length > 0;
+            },
+            highlight: 'add-intent-btn'
+        },
+        {
+            id: 'second_node',
+            text: "LET'S EXPAND THE WORLD.\n\nSTEP 6: CREATE A SECOND ROOM.\nCLICK [NEW NODE] AND NAME IT 'corridor'.\nADD TEXT: 'A long metal corridor.'\n\nCLICK [SAVE NODE] & [NEXT STEP].",
+            validate: () => AppState.storyData.nodes.find(n => n.id === 'corridor'),
+            highlight: 'new-node-btn'
+        },
+        {
+            id: 'select_intro',
+            text: "CONNECT THE ROOMS.\n\nSTEP 7: RETURN TO START.\nSELECT THE 'intro' NODE IN THE SIDEBAR LIST.",
+            validate: () => AppState.currentNodeId === 'intro',
+            highlight: 'node-list'
+        },
+        {
+            id: 'link_nodes',
+            text: "STEP 8: LINK TO CORRIDOR.\n1. CLICK [LINK NODE] BUTTON.\n2. ENTER 'corridor' AS TARGET.\n\nCLICK [SAVE NODE] & [NEXT STEP].",
+            validate: () => {
+                const intro = AppState.storyData.nodes.find(n => n.id === 'intro');
+                return intro && intro.intents.some(i => i.action === 'transition' && i.target === 'corridor');
+            },
+            highlight: 'link-node-btn'
+        },
+        {
+            id: 'state_setup_nav',
+            text: "DYNAMIC STATE IS POWERFUL.\n\nSTEP 9: SWITCH LOCATION.\nGO TO THE 'corridor' NODE IN THE LIST.",
+            validate: () => AppState.currentNodeId === 'corridor',
+            highlight: 'node-list'
+        },
+        {
+            id: 'state_setup',
+            text: "STEP 10: SET A FLAG.\n1. CLICK [ADD INTENT].\n2. ID: 'pull_lever'\n3. SET STATE: 'power_on:true'.\n4. ACTION: 'Text Response' -> 'You hear a hum.'\n\nCLICK [SAVE NODE] & [NEXT STEP].",
+            validate: () => {
+                const node = AppState.storyData.nodes.find(n => n.id === 'corridor');
+                return node && node.intents.some(i => i.set_state && i.set_state.power_on);
+            },
+            highlight: 'add-intent-btn'
+        },
+        {
+            id: 'conditional_text_nav',
+            text: "REACT TO STATE CHANGES.\n\nSTEP 11: RETURN TO START.\nGO BACK TO THE 'intro' NODE IN THE LIST.",
+            validate: () => AppState.currentNodeId === 'intro',
+            highlight: 'node-list'
+        },
+        {
+            id: 'conditional_text',
+            text: "STEP 12: CONDITIONAL DESCRIPTION.\n1. CLICK [ADD CONDITIONAL].\n2. IF STATE: 'power_on' : 'true'.\n3. TEXT: 'The room is now bright and humming.'\n\nCLICK [SAVE NODE] & [NEXT STEP].",
+            validate: () => {
+                const node = AppState.storyData.nodes.find(n => n.id === 'intro');
+                return node && node.text_conditionals && node.text_conditionals.some(c => c.if_state && c.if_state.power_on);
+            },
+            highlight: 'add-conditional-btn'
+        },
+        {
+            id: 'finish',
+            text: "SYSTEM OPTIMAL. YOU HAVE MASTERED:\n- NODES & LINKS\n- INTENTS\n- STATE & CONDITIONALS\n\nYOU ARE READY TO PUBLISH.\nREGISTER/LOGIN FIRST, THEN CLICK PUBLISH.",
+            validate: () => true,
+            highlight: 'nav-publish'
+        }
+    ]
+};
+
+function initTutorial() {
+    // Tutorial is not auto-started on init, waits for user
+    renderTutorial();
+}
+
+function startTutorialFlow() {
+    if (AppState.storyData.id && AppState.storyData.nodes.length > 0) {
+        if (!confirm("Starting the tutorial requires a fresh workspace. Create new story?")) return;
+        newStory(null, 'tutorial_story');
+    }
+    Tutorial.step = 0;
+    Tutorial.active = true;
+    document.getElementById('tutorial-container').style.display = 'flex';
+    renderTutorial();
+}
+
+function advanceTutorial() {
+    if (Tutorial.step >= Tutorial.steps.length) return;
+
+    const currentTask = Tutorial.steps[Tutorial.step];
+
+    // Validate
+    let isValid = false;
+    try {
+        isValid = currentTask.validate();
+    } catch(e) {
+        console.error("Tutorial check failed", e);
+    }
+
+    if (isValid) {
+        Tutorial.step++;
+        // Clear highlights
+        document.querySelectorAll('.highlight-tutorial').forEach(el => el.classList.remove('highlight-tutorial'));
+        renderTutorial();
+    } else {
+        alert("Action not completed yet. Please follow the instructions.");
+    }
+}
+
+// Keep this purely for backward compatibility if I miss removing a call,
+// but it should do nothing now that we use advanceTutorial.
+function checkTutorialState() {
+   // no-op
+}
+
+function renderTutorial() {
+    const container = els.tutorialContent;
+    const actionContainer = els.tutorialAction;
+
+    if (Tutorial.step >= Tutorial.steps.length) {
+        container.innerHTML = `<div class="tutorial-text" style="color:var(--success)">TUTORIAL COMPLETE.</div>`;
+        actionContainer.innerHTML = `<button class="btn-primary full-width" onclick="document.getElementById('tutorial-container').style.display='none'">CLOSE</button>`;
+        return;
+    }
+
+    const task = Tutorial.steps[Tutorial.step];
+    container.innerHTML = `<div class="tutorial-text">${task.text.replace(/\n/g, '<br>')}</div>`;
+
+    // Highlight
+    if (task.highlight) {
+        const el = document.getElementById(task.highlight);
+        if (el) el.classList.add('highlight-tutorial');
+    }
+
+    // Add Next Button
+    actionContainer.innerHTML = `
+        <button id="tutorial-next-btn" class="btn-primary full-width">NEXT STEP >></button>
+    `;
+    document.getElementById('tutorial-next-btn').onclick = advanceTutorial;
+}
+
+// --- Form Helpers ---
 function renderConditionals(list) {
     els.conditionalsList.innerHTML = '';
     list.forEach(c => addConditionalUI(c));
@@ -460,15 +881,11 @@ function addIntentUI(intent = {}) {
     const div = document.createElement('div');
     div.className = 'intent-card';
     const id = intent.id || `intent_${Date.now()}`;
-
-    // Helper to serialize set_state
     let setStateStr = '';
     if (intent.set_state) {
         const k = Object.keys(intent.set_state)[0];
         if (k) setStateStr = `${k}:${intent.set_state[k]}`;
     }
-
-    // Determine target value based on action
     let targetVal = intent.response || intent.target || intent.item_id || '';
 
     div.innerHTML = `
@@ -491,8 +908,8 @@ function addIntentUI(intent = {}) {
                 </select>
             </div>
             <div class="form-group full-width">
-                <label>AI Hint</label>
-                <input type="text" class="intent-desc" value="${intent.description || ''}">
+                <label>AI Intent Helper</label>
+                <input type="text" class="intent-desc" value="${intent.ai_intent_helper || intent.description || ''}">
             </div>
             <div class="form-group full-width">
                 <label>Look Around Text</label>
@@ -528,7 +945,7 @@ function gatherIntents() {
         const intent = {
             id,
             action,
-            description: card.querySelector('.intent-desc').value,
+            ai_intent_helper: card.querySelector('.intent-desc').value,
             text_description: card.querySelector('.intent-text-desc').value || undefined
         };
 
@@ -551,52 +968,81 @@ function gatherIntents() {
     return arr;
 }
 
-
-// --- Auth & Modals ---
-
-function logout() {
-    localStorage.removeItem('editor_user');
-    AppState.user = null;
-    updateUI();
-}
-
+// Auth & Modals (unchanged logic, just reused)
 async function performLogin(isRegister) {
     const u = document.getElementById('login-user').value;
     const p = document.getElementById('login-pass').value;
     const url = isRegister ? '/api/auth/register' : '/api/auth/login';
-
     try {
         const headers = {'Content-Type': 'application/json'};
-
-        // Add Security Headers
         if (AppState.csrfToken) headers['x-csrf-token'] = AppState.csrfToken;
-
-        // For register (anonymous), we might need the anon token
         const anonToken = sessionStorage.getItem('editor_anon_token');
         if (anonToken && isRegister) headers['x-anon-token'] = anonToken;
 
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({ username: u, password: p })
-        });
+        const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ username: u, password: p }) });
         const data = await res.json();
-
         if (res.ok) {
-            // Update Token if server rotated it or sent new one
             if (data.csrfToken) AppState.csrfToken = data.csrfToken;
-
             AppState.user = { username: data.username, token: data.token };
             localStorage.setItem('editor_user', JSON.stringify(AppState.user));
             closeModal('modal-login');
             updateUI();
-            alert(isRegister ? "Registered & Logged in!" : "Logged in!");
+            alert(isRegister ? "Registered!" : "Logged in!");
         } else {
             alert(data.error);
         }
-    } catch (e) {
-        alert("Error: " + e.message);
+    } catch (e) { alert("Error: " + e.message); }
+}
+
+// Modal helpers
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); if(id === 'modal-load') fetchStoryList(); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// Global
+window.performLogin = performLogin;
+window.saveManifest = saveManifest;
+window.closeModal = closeModal;
+window.toggleLockState = toggleLockState;
+
+function toggleTutorial() {
+    const container = document.getElementById("tutorial-container");
+    if (container.style.display === "none") {
+        container.style.display = "flex";
+    } else {
+        container.style.display = "none";
     }
+}
+window.toggleTutorial = toggleTutorial;
+
+function toggleLockState() {
+    const chk = document.getElementById('m-locked');
+    chk.checked = !chk.checked;
+    renderLockState();
+}
+
+function renderLockState() {
+    const chk = document.getElementById('m-locked');
+    const display = document.getElementById('lock-toggle');
+    if (chk.checked) {
+        display.innerHTML = '🔒 <span style="font-size: 0.8rem; color: var(--danger);">LOCKED</span>';
+    } else {
+        display.innerHTML = '🔓 <span style="font-size: 0.8rem; color: var(--success);">OPEN</span>';
+    }
+}
+
+function saveManifest() {
+    AppState.storyData.manifest.id = document.getElementById('m-id').value;
+    AppState.storyData.manifest.title = document.getElementById('m-title').value;
+    AppState.storyData.manifest.description = document.getElementById('m-desc').value;
+    AppState.storyData.manifest.authorId = document.getElementById('m-auth').value;
+    AppState.storyData.manifest.language = document.getElementById('m-lang').value;
+    // Date is auto
+    AppState.storyData.manifest.locked = document.getElementById('m-locked').checked;
+
+    AppState.storyData.id = AppState.storyData.manifest.id;
+    saveToLocal();
+    closeModal('modal-manifest');
+    updateUI();
 }
 
 async function populateManifestModal() {
@@ -605,24 +1051,21 @@ async function populateManifestModal() {
     document.getElementById('m-desc').value = AppState.storyData.manifest.description || '';
     document.getElementById('m-auth').value = AppState.storyData.manifest.authorId || (AppState.user ? AppState.user.username : '');
     document.getElementById('m-lang').value = AppState.storyData.manifest.language || 'en';
-    document.getElementById('m-date').value = AppState.storyData.manifest.date || new Date().toISOString().split('T')[0];
-}
+    document.getElementById('m-date').value = new Date().toISOString().split('T')[0]; // Display only
 
-function saveManifest() {
-    AppState.storyData.manifest.id = document.getElementById('m-id').value; // Changing ID might break sync?
-    AppState.storyData.manifest.title = document.getElementById('m-title').value;
-    AppState.storyData.manifest.description = document.getElementById('m-desc').value;
-    // Author ID is mostly controlled by login on publish, but we let them set it here for "Draft"
-    AppState.storyData.manifest.authorId = document.getElementById('m-auth').value;
-    AppState.storyData.manifest.language = document.getElementById('m-lang').value;
-    AppState.storyData.manifest.date = document.getElementById('m-date').value;
+    // Lock State
+    document.getElementById('m-locked').checked = !!AppState.storyData.manifest.locked;
+    renderLockState();
 
-    // Also update top-level ID if changed
-    AppState.storyData.id = AppState.storyData.manifest.id;
-
-    saveToLocal();
-    closeModal('modal-manifest');
-    updateUI();
+    // Fork Info
+    const forkGroup = document.getElementById('fork-info-group');
+    const forkDisplay = document.getElementById('fork-source-display');
+    if (AppState.storyData.manifest.isFork) {
+        forkGroup.classList.remove('hidden');
+        forkDisplay.textContent = `'${AppState.storyData.manifest.originalStoryTitle}' (ID: ${AppState.storyData.manifest.originalStoryId})`;
+    } else {
+        forkGroup.classList.add('hidden');
+    }
 }
 
 async function loadDocs() {
@@ -631,39 +1074,50 @@ async function loadDocs() {
     document.getElementById('docs-content').innerText = text;
 }
 
-// --- Modal Helpers ---
-function openModal(id) {
-    document.getElementById(id).classList.remove('hidden');
-    if (id === 'modal-load') fetchStoryList();
-}
-function closeModal(id) {
-    document.getElementById(id).classList.add('hidden');
-}
-
 async function fetchStoryList() {
     const list = document.getElementById('load-list');
     list.innerHTML = 'Loading...';
     const res = await fetch('/api/stories');
     const stories = await res.json();
     list.innerHTML = '';
+
+    // Get Current User
+    const currentUser = AppState.user ? AppState.user.username : null;
+
     stories.forEach(s => {
         const btn = document.createElement('button');
         btn.className = 'btn-secondary full-width';
         btn.style.marginBottom = '0.5rem';
-        // Handle object or legacy string
+        btn.style.display = 'flex';
+        btn.style.justifyContent = 'space-between';
+        btn.style.alignItems = 'center';
+
         const title = s.title ? `${s.title} [${s.id}]` : (s.id || s);
         const id = s.id || s;
 
-        btn.textContent = title;
-        btn.onclick = () => loadFromServer(id);
+        // Locking Logic
+        const isLocked = s.locked;
+        const isOwner = (currentUser && s.authorId === currentUser);
+        const canLoad = !isLocked || isOwner;
+
+        let lockIcon = '';
+        if (isLocked) {
+             lockIcon = isOwner ? '🔒 (Yours)' : '🔒 (Locked)';
+        }
+
+        btn.innerHTML = `<span>${title}</span> <span>${lockIcon}</span>`;
+
+        if (!canLoad) {
+            btn.disabled = true;
+            btn.style.opacity = 0.5;
+            btn.style.cursor = 'not-allowed';
+            btn.title = "This story is locked by the author.";
+        } else {
+            btn.onclick = () => loadFromServer(id);
+        }
+
         list.appendChild(btn);
     });
 }
 
-// Global Scope Assignments for HTML onclicks (if any remain)
-window.performLogin = performLogin;
-window.saveManifest = saveManifest;
-window.closeModal = closeModal;
-
-// Start
 init();

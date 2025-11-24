@@ -23,9 +23,9 @@ describe('GameEngine', () => {
         text: "Start Node Text",
         text_revisit: "Start Node Visited Text",
         intents: [
-            { id: "go_next", description: "Go to next room", intent_description: "Go Next", action: "transition", target: "next" },
-            { id: "look", description: "Look around", intent_description: "Look", action: "text", response: "You see nothing." },
-            { id: "quit", description: "Quit game", intent_description: "Quit", action: "end_game", response: "Bye." }
+            { id: "go_next", ai_intent_helper: "Go to next room", intent_description: "Go Next", action: "transition", target: "next" },
+            { id: "look", ai_intent_helper: "Look around", intent_description: "Look", action: "text", response: "You see nothing." },
+            { id: "quit", ai_intent_helper: "Quit game", intent_description: "Quit", action: "end_game", response: "Bye." }
         ]
     };
 
@@ -33,7 +33,7 @@ describe('GameEngine', () => {
         id: "next",
         text: "Next Node Text",
         intents: [
-            { id: "go_back", description: "Go back to start", intent_description: "Go Back", action: "transition", target: "start" }
+            { id: "go_back", ai_intent_helper: "Go back to start", intent_description: "Go Back", action: "transition", target: "start" }
         ]
     };
 
